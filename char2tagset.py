@@ -4,7 +4,7 @@ import logging
 
 import arrow
 
-from char2ir import char2ir_onestep
+#from char2ir import char2ir_onestep
 from ir2tagsets import ir2tagset_onestep
 from common import *
 

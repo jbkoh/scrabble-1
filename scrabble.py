@@ -1,10 +1,14 @@
 import argparse
 import pdb
+from operator import itemgetter
+from copy import deepcopy
+
+import arrow
 
 from common import *
-from char2ir import crf_test, learn_crf_model, char2ir_iteration
-from ir2tagsets import entity_recognition_from_ground_truth_get_avg, entity_recognition_iteration, crf_entity_recognition_iteration, ir2tagset_iteration
-from char2tagset import char2tagset_iteration
+from char2ir import Char2Ir
+from ir2tagsets import Ir2Tagsets
+from base_scrabble import BaseScrabble
 
 def str2bool(v):
     if v in ['true', 'True']:
@@ -14,13 +18,117 @@ def str2bool(v):
     else:
         assert(False)
 
-def str2slist(s):
+def str2slist(s): 
     s.replace(' ', '')
     return s.split(',')
 
 def str2ilist(s):
     s.replace(' ', '')
     return [int(c) for c in s.split(',')]
+
+
+class Scrabble(BaseScrabble):
+    """docstring for Scrabble"""
+    def __init__(self, 
+                 source_building_list, 
+                 target_building, 
+                 sample_num_list,
+                 building_sentence_dict,
+                 building_label_dict,
+                 conf):
+        self.char2ir = Char2Ir(source_building_list,
+                          target_building,
+                          sample_num_list,
+                          building_sentence_dict,
+                          building_label_dict,
+                          conf)
+        self.ir2tagsets = Ir2Tagsets(source_building_list, 
+                                     target_building, 
+                                     sample_num_list, 
+                                     building_sentence_dict,
+                                     building_label_dict,
+                                     conf)
+    def char2tagset_onestep(self,
+                            step_data,
+                            building_list,
+                            source_sample_num_list,
+                            target_building,
+                            use_cluster_flag=False,
+                            use_brick_flag=False,
+                            crftype='crfsuite',
+                            eda_flag=False,
+                            negative_flag=True,
+                            debug_flag=True,
+                            n_jobs=8, # TODO parameterize
+                            ts_flag=False,
+                            inc_num=10,
+                            crfqs='confidence',
+                            entqs='phrase_util'):
+        begin_time = arrow.get()
+        step_data = deepcopy(step_data)
+        step_data['learning_srcids'] = step_data['next_learning_srcids']
+
+        step_data = self.char2ir.char2ir_onestep(
+                                    step_data,
+                                    building_list,
+                                    source_sample_num_list,
+                                    target_building,
+                                    inc_num / 2,
+                                    crfqs)
+
+        step_data = self.ir2tagsets.ir2tagset_onestep(step_data,
+                                      building_list,
+                                      source_sample_num_list,
+                                      target_building,
+                                      use_cluster_flag,
+                                      use_brick_flag,
+                                      eda_flag,
+                                      negative_flag,
+                                      debug_flag,
+                                      n_jobs, # TODO parameterize
+                                      ts_flag,
+                                      inc_num / 2,
+                                      entqs)
+        end_time = arrow.get()
+        logging.info('An iteration takes ' + str(end_time - begin_time))
+        return step_data
+
+    def char2tagset_iteration(self, iter_num, custom_postfix='', *params):
+        """
+        params: 
+            building_list,
+            source_sample_num_list,
+            target_building,
+            use_cluster_flag=False,
+            use_brick_flag=False,
+            crftype='crfsuite'
+            eda_flag=False,
+            negative_flag=True,
+            debug_flag=True,
+            n_jobs=8, # TODO parameterize
+            ts_flag=False)
+        """
+        begin_time = arrow.get()
+        building_list = params[0]
+        source_sample_num_list = params[1]
+        prev_data = {'iter_num':0,
+                     'next_learning_srcids': get_random_srcids(
+                                            building_list,
+                                            source_sample_num_list),
+                     'model_uuid': None}
+        step_datas = self.iteration_wrapper(iter_num, self.char2tagset_onestep, 
+                                       prev_data, *params)
+
+        building_list = params[0]
+        target_building = params[2]
+        postfix = 'char2tagset_iter' 
+        if custom_postfix:
+            postfix += '_' + custom_postfix
+        with open('result/crf_entity_iter_{0}_{1}.json'\
+                .format(''.join(building_list+[target_building]), postfix), 'w') as fp:
+            json.dump(step_datas, fp, indent=2)
+        end_time = arrow.get()
+        print(iter_num, " iterations took: ", end_time - begin_time)
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
@@ -155,36 +263,81 @@ if __name__=='__main__':
     args = parser.parse_args()
 
     tagset_classifier_type = args.tagset_classifier_type
+    
+    building_sentence_dict = dict()
+    building_label_dict = dict()
+    for building in args.source_building_list + [args.target_building]:
+        # Load character label mappings.
+        with open('metadata/{0}_char_label_dict.json'.format(building), 'r')\
+            as fp:
+            one_label_dict = json.load(fp)
+
+        one_sentence_dict = {}
+        for srcid in one_label_dict.keys():
+            one_sentence_dict[srcid] = list(map(itemgetter(0), 
+                                            one_label_dict[srcid]))
+            one_label_dict[srcid] = list(map(itemgetter(1), 
+                                         one_label_dict[srcid]))
+        building_sentence_dict[building] = one_sentence_dict
+        building_label_dict[building] = one_label_dict
+
+    # Init objects
+    if args.prog in ['learn_crf', 'iter_crf', 'predict_crf']:
+        char2ir = Char2Ir(args.source_building_list,
+                          args.target_building,
+                          args.sample_num_list,
+                          building_sentence_dict,
+                          building_label_dict,
+                          {
+                              'use_cluster_flag': args.use_cluster_flag,
+                              'use_brick_flag': args.use_brick_flag
+                          })
+    if args.prog in ['entity']:
+        ir2tagsets = Ir2Tagsets(args.source_building_list, 
+                                args.target_building, 
+                                args.sample_num_list, 
+                                building_sentence_dict,
+                                building_label_dict,
+                                conf={
+                                    'use_cluster_flag': False,
+                                    'use_brick_flag': False
+                                })
+    if args.prog in ['crf_entity']:
+        scrabble = Scrabble(args.source_building_list, 
+                            args.target_building, 
+                            args.sample_num_list, 
+                            building_sentence_dict,
+                            building_label_dict,
+                            conf={
+                            'use_cluster_flag': True,
+                            'use_brick_flag': True 
+                            })
+
 
     if args.prog == 'learn_crf':
-        learn_crf_model(building_list=args.source_building_list,
-                        source_sample_num_list=args.sample_num_list,
-                        use_cluster_flag=args.use_cluster_flag,
-                        use_brick_flag=args.use_brick_flag,
-                        crftype=args.crftype)
+        char2ir.learn_crf_model(args.source_building_list,
+                                args.sample_num_list)
+        #learn_crf_model(building_list=args.source_building_list,
+        #                source_sample_num_list=args.sample_num_list,
+        #                use_cluster_flag=args.use_cluster_flag,
+        #                use_brick_flag=args.use_brick_flag,
+        #                crftype=args.crftype)
     elif args.prog == 'predict_crf':
-        crf_test(building_list=args.source_building_list,
+        char2ir.crf_test(building_list=args.source_building_list,
                  source_sample_num_list=args.sample_num_list,
-                 target_building=args.target_building,
-                 use_cluster_flag=args.use_cluster_flag,
-                 use_brick_flag=args.use_brick_flag)
+                 target_building=args.target_building)
     elif args.prog == 'iter_crf':
         params = (args.source_building_list,
                   args.sample_num_list,
                   args.target_building,
-                  args.use_cluster_flag,
-                  args.use_brick_flag,
-                  args.crftype,
                   args.inc_num,
                   args.crfqs,
 #                  args.n_jobs)
                  )
-        char2ir_iteration(args.iter_num, args.postfix, *params)
-
-
+        char2ir.char2ir_iteration(args.iter_num, args.postfix, *params)
     elif args.prog == 'entity':
         if args.avgnum == 1:
-            entity_recognition_iteration(args.iter_num,
+            ir2tagsets.entity_recognition_iteration(args.iter_num,
                                          args.postfix,
                                          args.source_building_list,
                                          args.sample_num_list,
@@ -199,21 +352,8 @@ if __name__=='__main__':
                                          args.inc_num,
                                          args.entqs
                                         )
-            """
-            params = (args.source_building_list,
-                      args.sample_num_list,
-                      args.target_building,
-                      args.use_cluster_flag,
-                      args.use_brick_flag,
-                      args.eda_flag,
-                      args.negative_flag,
-                      args.debug_flag,
-                      args.n_jobs,
-                      args.ts_flag)
-            ir2tagset_iteration(args.iter_num, args.postfix, *params)
-            """
         elif args.avgnum>1:
-            entity_recognition_from_ground_truth_get_avg(args.avgnum,
+            ir2tagsets.entity_recognition_from_ground_truth_get_avg(args.avgnum,
                 building_list=args.source_building_list,
                 source_sample_num_list=args.sample_num_list,
                 target_building=args.target_building,
@@ -225,19 +365,6 @@ if __name__=='__main__':
                 n_jobs=args.n_jobs,
                 worker_num=args.worker_num)
     elif args.prog == 'crf_entity':
-        """
-        params = (args.source_building_list,
-                  args.sample_num_list,
-                  args.target_building,
-                  args.use_cluster_flag,
-                  args.use_brick_flag,
-                  args.eda_flag,
-                  args.negative_flag,
-                  args.debug_flag,
-                  args.n_jobs,
-                  args.ts_flag)
-        crf_entity_recognition_iteration(args.iter_num, args.postfix, *params)
-        """
         params = (args.source_building_list,
                   args.sample_num_list,
                   args.target_building,
@@ -253,7 +380,7 @@ if __name__=='__main__':
                   args.crfqs,
                   args.entqs
                   )
-        char2tagset_iteration(args.iter_num, args.postfix, *params)
+        scrabble.char2tagset_iteration(args.iter_num, args.postfix, *params)
     elif args.prog == 'result':
         assert args.exp_type in ['crf', 'entity', 'crf_entity', 'entity_iter',
                                  'etc', 'entity_ts', 'cls']
@@ -277,3 +404,5 @@ if __name__=='__main__':
     else:
         #print('Either learn or predict should be provided')
         assert(False)
+
+
