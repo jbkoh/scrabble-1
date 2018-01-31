@@ -76,17 +76,6 @@ ts_feature_filename = 'TS_Features/features.pkl'
 tagset_classifier_type = 'StructuredCC'
 #tagset_classifier_type = 'CC'
 
-def init_srcids_dict():
-    building_list = ['ebu3b', 'ap_m', 'bml', 'ghc']
-    srcids_dict = dict()
-    for building in building_list:
-        with open('metadata/{0}_char_label_dict.json'\
-                  .format(building), 'r') as fp:
-            sentence_label_dict = json.load(fp)
-        srcids_dict[building] = list(sentence_label_dict.keys())
-    return srcids_dict
-raw_srcids_dict = init_srcids_dict()
-
 def extend_tree(tree, k, d):
     for curr_head, branches in tree.items():
         if k==curr_head:
@@ -170,6 +159,48 @@ class Ir2Tagsets(object):
                      'use_brick_flag': False
                  }):
         self.building_tagsets_dict = building_tagsets_dict
+        self.raw_srcids_dict = {}
+        for building, sentence_dict in building_sentence_dict.items():
+            self.raw_srcids_dict[building] = list(sentence_dict.keys())
+
+    def get_multi_buildings_data(self, building_list, srcids=[],
+                                 eda_flag=False, token_type='justseparate'):
+        sentence_dict = dict()
+        token_label_dict = dict()
+        truths_dict = dict()
+        sample_srcid_list_dict = dict()
+        phrase_dict = dict()
+        found_points = list()
+        for building in building_list:
+            temp_sentence_dict,\
+            temp_token_label_dict,\
+            temp_phrase_dict,\
+            temp_truths_dict,\
+            temp_srcid_dict = self.get_building_data(building, srcids)
+            sentence_dict.update(temp_sentence_dict)
+            token_label_dict.update(temp_token_label_dict)
+            truths_dict.update(temp_truths_dict)
+            phrase_dict.update(temp_phrase_dict)
+
+        assert set(srcids) == set(phrase_dict.keys())
+        return sentence_dict, token_label_dict, truths_dict, phrase_dict
+
+    def get_building_data(self, building, srcids):
+        sentence_dict = self.building_sentence_dict[building]
+        sentence_label_dict = self.building_label_dict[building]
+        truths_dict = self.building_tagsets_dict[building]
+        srcid_dict = {building: srcids}
+        sentence_dict = sub_dict_by_key_set(sentence_dict, srcids)
+        token_label_dict = dict((srcid, list(map(itemgetter(1), labels))) \
+                                for srcid, labels in sentence_label_dict.items())
+        token_label_dict = sub_dict_by_key_set(token_label_dict, \
+                                                    srcids)
+        # Remove truths_dict subdictionary if needed
+        truths_dict = sub_dict_by_key_set(truths_dict, srcids)
+        phrase_dict = make_phrase_dict(sentence_dict, token_label_dict)
+
+        return sentence_dict, token_label_dict, phrase_dict,\
+                truths_dict, srcid_dict
 
     def entity_recognition_iteration(self, iter_num, postfix, *args):
         step_data={
@@ -328,9 +359,7 @@ class Ir2Tagsets(object):
         validation_srcids = []
         validation_truths_dict = {}
         for building, sample_num in zip(building_list, source_sample_num_list):
-            with open('metadata/{0}_char_label_dict.json'\
-                      .format(building), 'r') as fp:
-                sentence_label_dict = json.load(fp) # char-level labels
+            sentence_label_dict = self.building_label_dict[building]
             srcids = list(sentence_label_dict.keys())
             # If it is the first iteration, select random samples.
             if iter_cnt == 1:
@@ -362,13 +391,13 @@ class Ir2Tagsets(object):
                                         use_cluster_flag,\
                                         reverse=True,
                                         shuffle_flag=False)
-        _, _, validation_truths_dict, _ = get_multi_buildings_data(building_list,\
+        _, _, validation_truths_dict, _ = self.get_multi_buildings_data(building_list,\
                                                                 validation_srcids, \
                                                                 eda_flag)
         learning_sentence_dict, \
         learning_token_label_dict, \
         learning_truths_dict, \
-        phrase_dict = get_multi_buildings_data(building_list, learning_srcids)
+        phrase_dict = self.get_multi_buildings_data(building_list, learning_srcids)
         # found_points is just for debugging
         found_points = [tagset for tagset \
                          in reduce(adder, learning_truths_dict.values(), []) \
@@ -377,9 +406,7 @@ class Ir2Tagsets(object):
         found_points = set(found_points)
 
         ### Get Test Data
-        with open('metadata/{0}_char_label_dict.json'\
-                  .format(target_building), 'r') as fp:
-            sentence_label_dict = json.load(fp)
+        sentence_label_dict = self.building_label_dict[target_building]
         test_srcids = [srcid for srcid in sentence_label_dict.keys() \
                            if srcid not in learning_srcids]
         total_srcid_dict[target_building] = list(sentence_label_dict.keys())
@@ -387,7 +414,7 @@ class Ir2Tagsets(object):
         test_token_label_dict,\
         test_phrase_dict,\
         test_truths_dict,\
-        test_srcid_dict = get_building_data(target_building, test_srcids)
+        test_srcid_dict = self.get_building_data(target_building, test_srcids)
 
         # Include tagsets not defined in Brick but added by the ground truth.
         # This better be removed if Brick is complete.
@@ -470,12 +497,12 @@ class Ir2Tagsets(object):
                                                   tagset_vectorizer)
 
         ### Test on the entire target building
-        target_srcids = raw_srcids_dict[target_building]
+        target_srcids = self.raw_srcids_dict[target_building]
         _,\
         _,\
         target_phrase_dict,\
         target_truths_dict,\
-        _                   = get_building_data(target_building, target_srcids)
+        _                   = self.get_building_data(target_building, target_srcids)
         target_pred_tagsets_dict, \
         target_pred_certainty_dict, \
         target_pred_point_dict, \
@@ -778,9 +805,7 @@ class Ir2Tagsets(object):
         global tree_depth_dict
         
         ### Read CRF Data from step_data
-        with open('metadata/{0}_label_dict_justseparate.json'
-                      .format(target_building), 'r') as fp:
-            srcids = json.load(fp).keys()
+        srcids = list(self.building_label_dict[building].keys())
         # Read CRF result
         crf_phrase_dict = step_data['phrase_dict']
         learning_srcids = step_data['learning_srcids']
@@ -794,19 +819,19 @@ class Ir2Tagsets(object):
         test_token_label_dict,\
         test_phrase_dict,\
         test_truths_dict,\
-        test_srcid_dict = get_building_data(target_building, test_srcids)
+        test_srcid_dict = self.get_building_data(target_building, test_srcids)
 
         ### Initialize Given (Learning) Data
         (crf_sentence_dict,
         crf_token_label_dict,
         _,
         crf_truths_dict, 
-        _) = get_building_data(target_building, crf_srcids)
+        _) = self.get_building_data(target_building, crf_srcids)
 
         given_sentence_dict, \
         given_token_label_dict, \
         given_truths_dict, \
-        given_phrase_dict = get_multi_buildings_data(building_list, learning_srcids)
+        given_phrase_dict = self.get_multi_buildings_data(building_list, learning_srcids)
 
         # Add tagsets in the learning dataset if not exists.
         extend_tagset_list(reduce(adder, \
@@ -985,51 +1010,8 @@ def entity_recognition_from_ground_truth_get_avg(N,
     print("FIN")
 
 
-def get_multi_buildings_data(building_list, srcids=[], \
-                             eda_flag=False, token_type='justseparate'):
-    sentence_dict = dict()
-    token_label_dict = dict()
-    truths_dict = dict()
-    sample_srcid_list_dict = dict()
-    phrase_dict = dict()
-    found_points = list()
-    for building in building_list:
-        temp_sentence_dict,\
-        temp_token_label_dict,\
-        temp_phrase_dict,\
-        temp_truths_dict,\
-        temp_srcid_dict = get_building_data(building, srcids)
-        sentence_dict.update(temp_sentence_dict)
-        token_label_dict.update(temp_token_label_dict)
-        truths_dict.update(temp_truths_dict)
-        phrase_dict.update(temp_phrase_dict)
-
-    assert set(srcids) == set(phrase_dict.keys())
-    return sentence_dict, token_label_dict, truths_dict, phrase_dict
 
 
-def get_building_data(building, srcids):
-    with open('metadata/{0}_char_sentence_dict.json'\
-              .format(building), 'r') as fp:
-        sentence_dict = json.load(fp)
-    with open('metadata/{0}_char_label_dict.json'\
-              .format(building), 'r') as fp:
-        sentence_label_dict = json.load(fp)
-    with open('metadata/{0}_ground_truth.json'\
-              .format(building), 'r') as fp:
-        truths_dict = json.load(fp)
-    srcid_dict = {building: srcids}
-    sentence_dict = sub_dict_by_key_set(sentence_dict, srcids)
-    token_label_dict = dict((srcid, list(map(itemgetter(1), labels))) \
-                            for srcid, labels in sentence_label_dict.items())
-    token_label_dict = sub_dict_by_key_set(token_label_dict, \
-                                                srcids)
-    # Remove truths_dict subdictionary if needed
-    truths_dict = sub_dict_by_key_set(truths_dict, srcids)
-    phrase_dict = make_phrase_dict(sentence_dict, token_label_dict)
-
-    return sentence_dict, token_label_dict, phrase_dict,\
-            truths_dict, srcid_dict
 
 def build_tagset_classifier(building_list, target_building,\
                             test_sentence_dict, test_token_label_dict,\
@@ -1581,7 +1563,7 @@ def parameter_validation(vect_doc, truth_mat, srcids, params_list_dict,\
                 validation_sentence_dict, \
                 validation_token_label_dict, \
                 validation_truths_dict, \
-                validation_phrase_dict = get_multi_buildings_data(\
+                validation_phrase_dict = self.get_multi_buildings_data(\
                                             source_target_buildings, validation_srcids, \
                                             eda_flag, token_type)
 
@@ -1615,7 +1597,7 @@ def parameter_validation(vect_doc, truth_mat, srcids, params_list_dict,\
     validation_sentence_dict, \
     validation_token_label_dict, \
     validation_truths_dict, \
-    validation_phrase_dict = get_multi_buildings_data(\
+    validation_phrase_dict = self.get_multi_buildings_data(\
                                 source_target_buildings, validation_srcids, \
                                 eda_flag, token_type)
 
@@ -2089,11 +2071,11 @@ def entity_recognition_from_crf(prev_step_data,\
                   if srcid not in given_srcids]
 
     ### Initialize Given (Learning) Data
-    _,_,_, crf_truths_dict, _ = get_building_data(target_building, crf_srcids)
+    _,_,_, crf_truths_dict, _ = self.get_building_data(target_building, crf_srcids)
     given_sentence_dict, \
     given_token_label_dict, \
     given_truths_dict, \
-    given_phrase_dict = get_multi_buildings_data(building_list, given_srcids)
+    given_phrase_dict = self.get_multi_buildings_data(building_list, given_srcids)
 
     # Add tagsets in the learning dataset if not exists.
     extend_tagset_list(reduce(adder, \
