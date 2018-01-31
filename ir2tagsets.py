@@ -163,11 +163,13 @@ class Ir2Tagsets(object):
                  n_list, 
                  building_sentence_dict,
                  building_label_dict,
+                 building_tagsets_dict,
+                 building_phrases_dict,
                  conf={
                      'use_cluster_flag': False,
                      'use_brick_flag': False
                  }):
-        pass
+        self.building_tagsets_dict = building_tagsets_dict
 
     def entity_recognition_iteration(self, iter_num, postfix, *args):
         step_data={

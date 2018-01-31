@@ -35,7 +35,15 @@ class Scrabble(BaseScrabble):
                  sample_num_list,
                  building_sentence_dict,
                  building_label_dict,
+                 building_tagsets_dict,
                  conf):
+        self.source_building_list = source_building_list
+        self.target_building = target_building
+        self.sample_num_list = sample_num_list
+        self.building_sentence_dict = building_sentence_dict
+        self.building_label_dict = building_label_dict
+        self.building_tagsets_dict = building_tagsets_dict
+        self.conf = conf
         self.char2ir = Char2Ir(source_building_list,
                           target_building,
                           sample_num_list,
@@ -51,7 +59,6 @@ class Scrabble(BaseScrabble):
     def char2tagset_onestep(self,
                             step_data,
                             building_list,
-                            source_sample_num_list,
                             target_building,
                             use_cluster_flag=False,
                             use_brick_flag=False,
@@ -152,9 +159,7 @@ if __name__=='__main__':
     parser.add_argument('-n', 
                         type=int, 
                         help='The number of learning sample',
-                        dest='sample_num')
-    """
-
+                        dest='sample_num') """ 
     parser.add_argument('-bl',
                         type='slist',
                         help='Learning source building name list',
@@ -266,11 +271,16 @@ if __name__=='__main__':
     
     building_sentence_dict = dict()
     building_label_dict = dict()
+    building_tagsets_dict = dict()
     for building in args.source_building_list + [args.target_building]:
         # Load character label mappings.
         with open('metadata/{0}_char_label_dict.json'.format(building), 'r')\
             as fp:
             one_label_dict = json.load(fp)
+
+        with open('metadata/{0}_true_tagsets.json'.format(building), 'r') \
+            as fp:
+            one_tagsets_dict = json.load(fp)
 
         one_sentence_dict = {}
         for srcid in one_label_dict.keys():
@@ -280,6 +290,7 @@ if __name__=='__main__':
                                          one_label_dict[srcid]))
         building_sentence_dict[building] = one_sentence_dict
         building_label_dict[building] = one_label_dict
+        building_tagsets_dict[building] = one_tagsets_dict
 
     # Init objects
     if args.prog in ['learn_crf', 'iter_crf', 'predict_crf']:
@@ -308,6 +319,7 @@ if __name__=='__main__':
                             args.sample_num_list, 
                             building_sentence_dict,
                             building_label_dict,
+                            building_tagsets_dict,
                             conf={
                             'use_cluster_flag': True,
                             'use_brick_flag': True 
