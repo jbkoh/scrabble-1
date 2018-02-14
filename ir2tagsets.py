@@ -153,7 +153,6 @@ class Ir2Tagsets(object):
                  building_sentence_dict,
                  building_label_dict,
                  building_tagsets_dict,
-                 building_phrases_dict,
                  conf={
                      'use_cluster_flag': False,
                      'use_brick_flag': False
