@@ -1,4 +1,14 @@
+import pdb
+from collections import OrderedDict
+import json
+import random
+from functools import reduce
 
+def adder(x, y):
+    return x + y
+
+def splitter(s):
+    return s.split()
 
 
 
@@ -28,16 +38,17 @@ class BaseScrabble(object):
     def check_in(self, x, y):
         return x in y
 
-    def select_random_samples(self,
-                              building,
-                              srcids,
-                              n,
-                              use_cluster_flag,
-                              token_type='justseparate',
-                              reverse=True,
-                              cluster_dict=None,
-                              shuffle_flag=True,
-                             ):
+    def select_random_samples(
+            self,
+            building,
+            srcids,
+            n,
+            use_cluster_flag,
+            token_type='justseparate',
+            reverse=True,
+            cluster_dict=None,
+            shuffle_flag=True,
+            ):
         if not cluster_dict:
             cluster_filename = 'model/%s_word_clustering_%s.json' % (building, token_type)
             with open(cluster_filename, 'r') as fp:
@@ -75,7 +86,7 @@ class BaseScrabble(object):
     def adder(x, y):
         return x+y
 
-    def bilou_tagset_phraser(sentence, token_labels):
+    def bilou_tagset_phraser(self, sentence, token_labels):
         phrase_labels = list()
         curr_phrase = ''
         for i, (c, label) in enumerate(zip(sentence, token_labels)):
@@ -115,8 +126,8 @@ class BaseScrabble(object):
                     pdb.set_trace()
         if curr_phrase != '':
             phrase_labels.append(curr_phrase)
-        phrase_labels = [leave_one_word(\
-                             leave_one_word(phrase_label, 'leftidentifier'),\
+        phrase_labels = [self.leave_one_word(\
+                             self.leave_one_word(phrase_label, 'leftidentifier'),\
                                 'rightidentifier')\
                             for phrase_label in phrase_labels]
         phrase_labels = list(reduce(adder, map(splitter, phrase_labels), []))
@@ -216,29 +227,25 @@ class BaseScrabble(object):
         return x + y
 
 
-    def get_random_srcids(building_list, source_sample_num_list):
+    def get_random_srcids(self, 
+                          building_srcid_dict,
+                          building_list, 
+                          source_sample_num_list):
         srcids = list()
         for building, source_sample_num in zip(building_list, 
                                                source_sample_num_list): 
                                             #  Load raw sentences of a building
-            with open("metadata/%s_char_sentence_dict.json" % (building), 
-                          "r") as fp:
-                sentence_dict = json.load(fp)
-            sentence_dict = dict((srcid, [char for char in sentence]) 
-                                 for (srcid, sentence) in sentence_dict.items())
-
-            # Load character label mappings.
-            with open('metadata/{0}_char_label_dict.json'.format(building), 
-                          'r') as fp:
-                label_dict = json.load(fp)
+            sentence_dict = self.building_sentence_dict[building]
 
             # Select learning samples.
             # Learning samples can be chosen from the previous stage.
             # Or randomly selected.
-            sample_srcid_list = select_random_samples(building, \
-                                                      label_dict.keys(), \
-                                                      source_sample_num, \
-                                                      use_cluster_flag=True)
+            sample_srcid_list = self.select_random_samples(
+                building,
+                #label_dict.keys(),
+                self.building_srcid_dict[building],
+                source_sample_num,
+                use_cluster_flag=True)
             srcids += sample_srcid_list
         return srcids
 

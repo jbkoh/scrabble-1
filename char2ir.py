@@ -74,6 +74,7 @@ from brick_parser import pointTagsetList        as  point_tagsets,\
                          locationSubclassDict   as  location_subclass_dict,\
                          tagsetTree             as  tagset_tree
 from common import *
+from base_scrabble import BaseScrabble
 
 
 crfsharp_other_postfixes = ['.alpha', '.feature', '.feature.raw_text']
@@ -82,7 +83,7 @@ crfsharp_maxiter = 20
 #logger = get_logger()
 
 
-class Char2Ir():
+class Char2Ir(BaseScrabble):
     """docstring for Char2Ir"""
     def __init__(self, 
                  b_list, 
@@ -647,18 +648,29 @@ class Char2Ir():
 
         logger = logging.getLogger()
         # Load ground truth
-        with open('metadata/{0}_char_label_dict.json'.format(target_building), 'r') as fp:
-            label_dict = json.load(fp)
-        with open('metadata/{0}_label_dict_justseparate.json'
-                      .format(target_building), 
-                  'r') as fp:
-            phrase_label_dict = json.load(fp)
-        with open('metadata/{0}_char_sentence_dict.json'\
-                    .format(target_building), 'r') as fp:
-            raw_sentence_dict = json.load(fp)
-            sentence_dict = dict()
-            for srcid in label_dict.keys():
-                sentence_dict[srcid] = raw_sentence_dict[srcid]
+        #with open('metadata/{0}_char_label_dict.json'.format(target_building), 'r') as fp:
+        #    label_dict = json.load(fp)
+        label_dict = self.building_label_dict[target_building]
+
+
+        #with open('metadata/{0}_label_dict_justseparate.json'
+        #              .format(target_building), 
+        #          'r') as fp:
+        #    phrase_label_dict = json.load(fp)
+
+        #with open('metadata/{0}_char_sentence_dict.json'\
+        #            .format(target_building), 'r') as fp:
+        #    raw_sentence_dict = json.load(fp)
+        #    sentence_dict = dict()
+        #    for srcid in label_dict.keys():
+        #        sentence_dict[srcid] = raw_sentence_dict[srcid]
+        sentence_dict = self.building_sentence_dict[target_building]
+
+        phrase_label_dict = dict()
+        for srcid, labels in label_dict.items():
+            phrase_label_dict[srcid] = self.bilou_tagset_phraser(
+                sentence_dict[srcid], labels)
+
 
         cand_srcids = [srcid for srcid in label_dict.keys() 
                        if srcid not in prev_learning_srcids]
@@ -829,6 +841,8 @@ class Char2Ir():
             
             
         ### Finding words known and unknown.
+        ### TODO: Leave below for debugging/logging
+        """
         with open('metadata/{0}_sentence_dict_justseparate.json'\
                       .format(target_building), 'r') as fp:
             word_sentence_dict = json.load(fp)
@@ -858,6 +872,7 @@ class Char2Ir():
         if len(new_word_counter):
             logger.info('purity of new srcids ' + 
                         str(len(newly_found_words) / len(new_word_counter)))
+        """
         
         return next_learning_srcids
 

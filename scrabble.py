@@ -44,6 +44,12 @@ class Scrabble(BaseScrabble):
         self.building_label_dict = building_label_dict
         self.building_tagsets_dict = building_tagsets_dict
         self.conf = conf
+        
+        self.building_srcid_dict = dict()
+        for building, sentences in self.building_sentence_dict.items():
+            self.building_srcid_dict[building] = list(sentences.keys())
+
+
         self.char2ir = Char2Ir(source_building_list,
                           target_building,
                           sample_num_list,
@@ -55,17 +61,19 @@ class Scrabble(BaseScrabble):
                                      sample_num_list, 
                                      building_sentence_dict,
                                      building_label_dict,
+                                     building_tagsets_dict,
                                      conf)
     def char2tagset_onestep(self,
                             step_data,
                             building_list,
                             target_building,
+                            sample_num_list,
                             use_cluster_flag=False,
                             use_brick_flag=False,
                             crftype='crfsuite',
                             eda_flag=False,
                             negative_flag=True,
-                            debug_flag=True,
+                            debug_flag=False,
                             n_jobs=8, # TODO parameterize
                             ts_flag=False,
                             inc_num=10,
@@ -78,14 +86,15 @@ class Scrabble(BaseScrabble):
         step_data = self.char2ir.char2ir_onestep(
                                     step_data,
                                     building_list,
-                                    source_sample_num_list,
+                                    sample_num_list,
                                     target_building,
                                     inc_num / 2,
                                     crfqs)
 
+        pdb.set_trace()
         step_data = self.ir2tagsets.ir2tagset_onestep(step_data,
                                       building_list,
-                                      source_sample_num_list,
+                                      sample_num_list,
                                       target_building,
                                       use_cluster_flag,
                                       use_brick_flag,

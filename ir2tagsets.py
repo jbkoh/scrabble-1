@@ -149,7 +149,7 @@ class Ir2Tagsets(object):
     def __init__(self, 
                  b_list, 
                  target_building, 
-                 n_list, 
+                 sample_num_list,
                  building_sentence_dict,
                  building_label_dict,
                  building_tagsets_dict,
@@ -157,6 +157,10 @@ class Ir2Tagsets(object):
                      'use_cluster_flag': False,
                      'use_brick_flag': False
                  }):
+        self.use_brick_flag = conf['use_brick_flag']
+        self.use_cluster_flag = conf['use_cluster_flag']
+        self.building_sentence_dict = building_sentence_dict
+        self.building_label_dict = building_label_dict
         self.building_tagsets_dict = building_tagsets_dict
         self.raw_srcids_dict = {}
         for building, sentence_dict in building_sentence_dict.items():
@@ -190,10 +194,9 @@ class Ir2Tagsets(object):
         truths_dict = self.building_tagsets_dict[building]
         srcid_dict = {building: srcids}
         sentence_dict = sub_dict_by_key_set(sentence_dict, srcids)
-        token_label_dict = dict((srcid, list(map(itemgetter(1), labels))) \
-                                for srcid, labels in sentence_label_dict.items())
-        token_label_dict = sub_dict_by_key_set(token_label_dict, \
-                                                    srcids)
+        #token_label_dict = dict((srcid, list(map(itemgetter(1), labels))) \
+        #                        for srcid, labels in sentence_label_dict.items())
+        token_label_dict = sub_dict_by_key_set(sentence_label_dict, srcids)
         # Remove truths_dict subdictionary if needed
         truths_dict = sub_dict_by_key_set(truths_dict, srcids)
         phrase_dict = make_phrase_dict(sentence_dict, token_label_dict)
@@ -804,7 +807,7 @@ class Ir2Tagsets(object):
         global tree_depth_dict
         
         ### Read CRF Data from step_data
-        srcids = list(self.building_label_dict[building].keys())
+        srcids = list(self.building_label_dict[target_building].keys())
         # Read CRF result
         crf_phrase_dict = step_data['phrase_dict']
         learning_srcids = step_data['learning_srcids']
@@ -2475,6 +2478,7 @@ def ir2tagset_iteration(iter_num, custom_postfix, *args):
                                         building_list,
                                         source_sample_num_list),
                  'model_uuid': None}
+    pdb.set_trace()
     step_datas = iteration_wrapper(iter_num, ir2tagset_onestep, prev_data, *args)
 
     building_list = args[0]

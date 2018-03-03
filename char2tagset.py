@@ -39,6 +39,7 @@ def char2tagset_onestep(step_data,
                                      inc_num / 2,
                                      crfqs)
 
+    pdb.set_trace()
     step_data = ir2tagset_onestep(step_data,
                                   building_list,
                                   source_sample_num_list,
