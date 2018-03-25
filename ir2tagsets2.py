@@ -3,9 +3,33 @@ from uuid import uuid4
 from operator import itemgetter
 
 import numpy as np
+import pickle
+
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, \
+    GradientBoostingClassifier
+from sklearn.linear_model import LogisticRegression, SGDClassifier, PassiveAggressiveClassifier
+from sklearn.multiclass import OneVsRestClassifier, OneVsOneClassifier
+from sklearn.feature_selection import SelectFromModel, VarianceThreshold, chi2, SelectPercentile, SelectKBest
+from sklearn.pipeline import Pipeline
+from scipy.sparse import vstack, csr_matrix, hstack, issparse, coo_matrix, \
+    lil_matrix
+from sklearn.preprocessing import MultiLabelBinarizer
+from skmultilearn.problem_transform import LabelPowerset, ClassifierChain, \
+    BinaryRelevance
+from sklearn.metrics import precision_recall_fscore_support
 
 from base_scrabble import BaseScrabble
 from common import *
+from brick_parser import pointTagsetList        as  point_tagsets,\
+                         locationTagsetList     as  location_tagsets,\
+                         equipTagsetList        as  equip_tagsets,\
+                         pointSubclassDict      as  point_subclass_dict,\
+                         equipSubclassDict      as  equip_subclass_dict,\
+                         locationSubclassDict   as  location_subclass_dict,\
+                         tagsetTree             as  tagset_tree
+
+tagset_list = point_tagsets + location_tagsets + equip_tagsets
+tagset_list.append('networkadapter')
 
 
 def tree_flatter(tree, init_flag=True):
@@ -17,6 +41,46 @@ def tree_flatter(tree, init_flag=True):
             d_list = [d for d in d_list if d not in added_d_list]\
                     + added_d_list
     return d_list
+
+def extend_tree(tree, k, d):
+    for curr_head, branches in tree.items():
+        if k==curr_head:
+            branches.append(d)
+        for branch in branches:
+            extend_tree(branch, k, d)
+
+def calc_leaves_depth(tree, d=dict(), depth=0):
+    curr_depth = depth + 1
+    for tagset, branches in tree.items():
+        if d.get(tagset):
+            d[tagset] = max(d[tagset], curr_depth)
+        else:
+            d[tagset] = curr_depth
+        for branch in branches:
+            new_d = calc_leaves_depth(branch, d, curr_depth)
+            for k, v in new_d.items():
+                if d.get(k):
+                    d[k] = max(d[k], v)
+                else:
+                    d[k] = v
+    return d
+
+def augment_tagset_tree(tagsets):
+    global tagset_tree
+    global subclass_dict
+    for tagset in set(tagsets):
+        if '-' in tagset:
+            classname = tagset.split('-')[0]
+            #tagset_tree[classname].append({tagset:[]})
+            extend_tree(tagset_tree, classname, {tagset:[]})
+            subclass_dict[classname].append(tagset)
+            subclass_dict[tagset] = []
+        else:
+            if tagset not in subclass_dict.keys():
+                classname = tagset.split('_')[-1]
+                subclass_dict[classname].append(tagset)
+                subclass_dict[tagset] = []
+                extend_tree(tagset_tree, classname, {tagset:[]})
 
 
 # TODO: Initialize tagset_list
@@ -51,6 +115,7 @@ class Ir2Tagsets(BaseScrabble):
         self.target_srcids = target_srcids
         self._init_data()
         self.ts2ir = None
+        self.ts_feature_filename = 'TS_Features/features.pkl'
 
         if 'eda_flag' in conf:
             self.eda_flag = conf['eda_flag'], 
@@ -66,14 +131,14 @@ class Ir2Tagsets(BaseScrabble):
             n_jobs = 6
         if 'ts_flag' in conf:
             self.ts_flag = conf['ts_flag']
-        else;
+        else:
             self.ts_flag = False
         if 'negative_flag' in conf:
             self.negative_flag = conf['negative_flag']
         else:
             self.negative_flag = True
         if 'tagset_classifier_type' in conf:
-            self.tagset_classifier_type = tagset_classifier_type
+            self.tagset_classifier_type = conf['tagset_classifier_type']
         else: 
             self.tagset_classifier_type = 'StructuredCC'
         if 'n_estimators' in conf:
@@ -84,6 +149,20 @@ class Ir2Tagsets(BaseScrabble):
             self.vectorizer_type = conf['vectorizer_type']
         else:
             self.vectorizer_type = 'tfidf'
+        self._init_brick()
+
+    def _init_brick(self):
+        self.tagset_list = point_tagsets + location_tagsets + equip_tagsets
+        self.tagset_list.append('networkadapter')
+
+        self.subclass_dict = dict()
+        self.subclass_dict.update(point_subclass_dict)
+        self.subclass_dict.update(equip_subclass_dict)
+        self.subclass_dict.update(location_subclass_dict)
+        self.subclass_dict['networkadapter'] = list()
+        self.subclass_dict['unknown'] = list()
+        self.subclass_dict['none'] = list()
+        
 
     def _init_data(self):
         self.learning_srcids = []
@@ -116,9 +195,19 @@ class Ir2Tagsets(BaseScrabble):
 
         self.phrase_dict = make_phrase_dict(self.sentence_dict, 
                                             self.label_dict)
+    def _extend_tagset_list(self, new_tagsets):
+        self.tagset_list += new_tagsets
+        self.tagset_list = list(set(self.tagset_list))
 
     def update_model(self, srcids):
-        pass
+        self.learning_srcids += srcids
+        self._extend_tagset_list([self.tagsets_dict[srcid] 
+                            for srcid in self.learning_srcids + 
+                                         self.target_srcids])
+        augment_tagset_tree(tagset_list)
+        self._build_tagset_classifier(self.learning_srcids,
+                                      self.target_srcids,
+                                      validation_srcids=[])
 
     # ESSENTIAL
     def select_informative_samples(self, sample_num):
@@ -130,12 +219,24 @@ class Ir2Tagsets(BaseScrabble):
         """
         pass
 
+    def _augment_phrases_with_ts(self, phrase_dict, srcids, ts2ir):
+        with open(ts_feature_filename, 'rb') as fp:
+            ts_features = pickle.load(fp, encoding='bytes')
+        ts_tags_pred = ts2ir.predict(ts_features, srcids)
+
+        tag_binarizer = ts2ir.get_binarizer()
+        pred_tags_list = tag_binarizer.inverse_transform(ts_tags_pred)
+
+        for srcid, pred_tags in zip(srcids, pred_tags_list):
+            phrase_dict[srcid] += list(pred_tags)
+        return phrase_dict
+
     def _predict_and_proba(self, target_srcids):
         #return self.tagset_classifier, self.tagset_vectorizer, self.tagset_binarizer, self.ts2ir
         phrase_dict = {srcid: self.phrase_dict[srcid] 
                        for srcid in target_srcids}
         if ts2ir:
-            phrase_dict = augment_ts(phrase_dict, srcids, ts2ir)
+            phrase_dict = self._augment_phrases_with_ts(phrase_dict, srcids, ts2ir)
         doc = [' '.join(phrase_dict[srcid]) for srcid in srcids]
         vect_doc = self.tagset_vectorizer.transform(doc) # should this be fit_transform?
 
@@ -224,7 +325,7 @@ class Ir2Tagsets(BaseScrabble):
                                    in learning_point_dict.items()])
         tag_binarizer = MultiLabelBinarizer()
         tag_binarizer.fit(map(splitter, learning_point_dict.values()))
-        with open(ts_feature_filename, 'rb') as fp:
+        with open(self.ts_feature_filename, 'rb') as fp:
             ts_features = pickle.load(fp, encoding='bytes')
         new_ts_features = list()
         for ts_feature in ts_features:

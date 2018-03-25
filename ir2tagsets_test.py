@@ -2,10 +2,9 @@ import arrow
 from mongoengine import *
 import pdb
 
-from char2ir2 import Char2Ir
+from ir2tagsets2 import Ir2Tagsets
 
 t0 = arrow.get()
-
 
 connect('oracle')
 
@@ -25,11 +24,9 @@ column_names = ['VendorGivenName',
                  'BACnetName', 
                  'BACnetDescription']
 
-
 target_building = 'ebu3b'
 source_buildings = ['ap_m', 'ebu3b']
 source_sample_num_list = [5, 0]
-
 
 building_sentence_dict = dict()
 building_label_dict = dict()
@@ -71,17 +68,13 @@ for building in source_buildings:
 target_srcids = list(building_label_dict[target_building].keys())
 t1 = arrow.get()
 print(t1-t0)
-
-char2ir = Char2Ir(target_building, 
+ir2tagsets = Ir2Tagsets(target_building, 
                   target_srcids,
                   building_label_dict,
                   building_sentence_dict,
                   source_buildings,
-                  source_sample_num_list,
-                  conf={
-                      'use_cluster_flag': False,
-                      #'use_brick_flag': False
-                  })
+                  source_sample_num_list
+                  )
 t2 = arrow.get()
 print(t2-t1)
 
