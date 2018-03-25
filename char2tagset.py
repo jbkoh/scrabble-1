@@ -4,7 +4,7 @@ import logging
 
 import arrow
 
-from char2ir import char2ir_onestep
+#from char2ir import char2ir_onestep
 from ir2tagsets import ir2tagset_onestep
 from common import *
 
@@ -39,6 +39,7 @@ def char2tagset_onestep(step_data,
                                      inc_num / 2,
                                      crfqs)
 
+    pdb.set_trace()
     step_data = ir2tagset_onestep(step_data,
                                   building_list,
                                   source_sample_num_list,
