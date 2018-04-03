@@ -1,279 +1,134 @@
-import argparse
 import pdb
+from copy import deepcopy
 
+from ir2tagsets2 import Ir2Tagsets
+from char2ir2 import Char2Ir
+from base_scrabble import BaseScrabble
 from common import *
-from char2ir import crf_test, learn_crf_model, char2ir_iteration
-from ir2tagsets import entity_recognition_from_ground_truth_get_avg, entity_recognition_iteration, crf_entity_recognition_iteration, ir2tagset_iteration
-from char2tagset import char2tagset_iteration
-
-def str2bool(v):
-    if v in ['true', 'True']:
-        return True
-    elif v in ['false', 'False']:
-        return False
-    else:
-        assert(False)
-
-def str2slist(s):
-    s.replace(' ', '')
-    return s.split(',')
-
-def str2ilist(s):
-    s.replace(' ', '')
-    return [int(c) for c in s.split(',')]
-
-if __name__=='__main__':
-    parser = argparse.ArgumentParser()
-    parser.register('type','bool',str2bool)
-    parser.register('type','slist', str2slist)
-    parser.register('type','ilist', str2ilist)
-
-    parser.add_argument(choices=['learn_crf', 'predict_crf', 'entity', 'crf_entity', \
-                                 'init', 'result', 'iter_crf'],
-                        dest = 'prog')
-
-    parser.add_argument('predict',
-                         action='store_true',
-                         default=False)
-
-    """
-    parser.add_argument('-b',
-                        type=str,
-                        help='Learning source building name',
-                        dest='source_building')
-    parser.add_argument('-n', 
-                        type=int, 
-                        help='The number of learning sample',
-                        dest='sample_num')
-    """
-
-    parser.add_argument('-bl',
-                        type='slist',
-                        help='Learning source building name list',
-                        dest='source_building_list')
-    parser.add_argument('-nl',
-                        type='ilist',
-                        help='A list of the number of learning sample',
-                        dest='sample_num_list')
-    parser.add_argument('-l',
-                        type=str,
-                        help='Label type (either label or category',
-                        default='label',
-                        dest='label_type')
-    parser.add_argument('-c',
-                        type='bool',
-                        help='flag to indicate use hierarchical cluster \
-                                to select learning samples.',
-                        default=True,
-                        dest='use_cluster_flag')
-    parser.add_argument('-d',
-                        type='bool',
-                        help='Debug mode flag',
-                        default=False,
-                        dest='debug_flag')
-    parser.add_argument('-t',
-                        type=str,
-                        help='Target buildling name',
-                        dest='target_building')
-    parser.add_argument('-crftype',
-                        type=str,
-                        help='CRF Package Name',
-                        default='crfsuite',
-                        dest='crftype')
-    parser.add_argument('-eda',
-                        type='bool',
-                        help='Flag to use Easy Domain Adapatation',
-                        default=False,
-                        dest='eda_flag')
-    parser.add_argument('-ub',
-                        type='bool',
-                        help='Use Brick when learning',
-                        default=False,
-                        dest='use_brick_flag')
-    parser.add_argument('-avg',
-                        type=int,
-                        help='Number of exp to get avg. If 1, ran once',
-                        dest='avgnum',
-                        default=1)
-    parser.add_argument('-iter',
-                        type=int,
-                        help='Number of iteration for the given work',
-                        dest='iter_num',
-                        default=1)
-    parser.add_argument('-wk',
-                        type=int,
-                        help='Number of workers for high level MP',
-                        dest='worker_num',
-                        default=2)
-    parser.add_argument('-nj',
-                        type=int,
-                        help='Number of processes for multiprocessing',
-                        dest='n_jobs',
-                        default=4)
-    parser.add_argument('-inc',
-                        type=int,
-                        help='Inc num in each strage',
-                        dest='inc_num',
-                        default=10)
-    parser.add_argument('-ct',
-                        type=str,
-                        help='Tagset classifier type. one of RandomForest, \
-                              StructuredCC.',
-                        dest='tagset_classifier_type',
-                        default='StructuredCC')
-    parser.add_argument('-ts',
-                        type='bool',
-                        help='Flag to use time series features too',
-                        dest='ts_flag',
-                        default=False)
-    parser.add_argument('-neg',
-                        type='bool',
-                        help='Negative Samples augmentation',
-                        dest='negative_flag',
-                        default=True)
-    parser.add_argument('-exp', 
-                        type=str,
-                        help='type of experiments for result output',
-                        dest = 'exp_type')
-    parser.add_argument('-post', 
-                        type=str,
-                        help='postfix of result filename',
-                        default='0',
-                        dest = 'postfix')
-    parser.add_argument('-crfqs', 
-                        type=str,
-                        help='Query strategy for CRF',
-                        default='confidence',
-                        dest = 'crfqs')
-    parser.add_argument('-entqs',
-                        type=str,
-                        help='Query strategy for CRF',
-                        default='phrase_util',
-                        dest = 'entqs')
-                        
-
-    args = parser.parse_args()
-
-    tagset_classifier_type = args.tagset_classifier_type
-
-    if args.prog == 'learn_crf':
-        learn_crf_model(building_list=args.source_building_list,
-                        source_sample_num_list=args.sample_num_list,
-                        use_cluster_flag=args.use_cluster_flag,
-                        use_brick_flag=args.use_brick_flag,
-                        crftype=args.crftype)
-    elif args.prog == 'predict_crf':
-        crf_test(building_list=args.source_building_list,
-                 source_sample_num_list=args.sample_num_list,
-                 target_building=args.target_building,
-                 use_cluster_flag=args.use_cluster_flag,
-                 use_brick_flag=args.use_brick_flag)
-    elif args.prog == 'iter_crf':
-        params = (args.source_building_list,
-                  args.sample_num_list,
-                  args.target_building,
-                  args.use_cluster_flag,
-                  args.use_brick_flag,
-                  args.crftype,
-                  args.inc_num,
-                  args.crfqs,
-#                  args.n_jobs)
-                 )
-        char2ir_iteration(args.iter_num, args.postfix, *params)
 
 
-    elif args.prog == 'entity':
-        if args.avgnum == 1:
-            entity_recognition_iteration(args.iter_num,
-                                         args.postfix,
-                                         args.source_building_list,
-                                         args.sample_num_list,
-                                         args.target_building,
-                                         args.use_cluster_flag,
-                                         args.use_brick_flag,
-                                         args.debug_flag,
-                                         args.eda_flag,
-                                         args.ts_flag,
-                                         args.negative_flag,
-                                         args.n_jobs,
-                                         args.inc_num,
-                                         args.entqs
-                                        )
+class Scrabble(BaseScrabble):
+    def __init__(self,
+                 target_building,
+                 target_srcids,
+                 building_label_dict,
+                 building_sentence_dict,
+                 building_tagsets_dict,
+                 source_buildings,
+                 source_sample_num_list,
+                 conf={},
+                 learning_srcids=[]
+                 ):
+        super(Scrabble, self).__init__(
+                 target_building,
+                 target_srcids,
+                 building_label_dict,
+                 building_sentence_dict,
+                 building_tagsets_dict,
+                 source_buildings,
+                 source_sample_num_list,
+                 deepcopy(learning_srcids),
+                 conf)
+        self.target_srcids = target_srcids
+        if 'use_cluster_flag' in conf:
+            self.use_cluster_flag = conf['use_cluster_flag']
+        else:
+            self.use_cluster_flag = True
+
+        self.init_data()
+        self.char2ir = Char2Ir(target_building,
+                               target_srcids,
+                               building_label_dict,
+                               building_sentence_dict,
+                               source_buildings,
+                               source_sample_num_list,
+                               deepcopy(self.learning_srcids),
+                               conf
+                               )
+        self.ir2tagsets = Ir2Tagsets(target_building,
+                                     target_srcids,
+                                     building_label_dict,
+                                     building_sentence_dict,
+                                     building_tagsets_dict,
+                                     source_buildings,
+                                     source_sample_num_list,
+                                     deepcopy(self.learning_srcids),
+                                     conf
+                                     )
+
+    def init_data(self):
+        self.sentence_dict = {}
+        self.label_dict = {}
+        self.tagsets_dict = {}
+        self.phrase_dict = {}
+        #self.point_dict = {}
+
+        for building, source_sample_num in zip(self.source_buildings,
+                                               self.source_sample_num_list):
+            self.sentence_dict.update(self.building_sentence_dict[building])
+            one_label_dict = self.building_label_dict[building]
+            self.label_dict.update(one_label_dict)
+
+            if not self.learning_srcids:
+                sample_srcid_list = select_random_samples(
+                                        building,
+                                        one_label_dict.keys(),
+                                        source_sample_num,
+                                        self.use_cluster_flag)
+                self.learning_srcids += sample_srcid_list
+            one_tagsets_dict = self.building_tagsets_dict[building]
+            self.tagsets_dict.update(one_tagsets_dict)
             """
-            params = (args.source_building_list,
-                      args.sample_num_list,
-                      args.target_building,
-                      args.use_cluster_flag,
-                      args.use_brick_flag,
-                      args.eda_flag,
-                      args.negative_flag,
-                      args.debug_flag,
-                      args.n_jobs,
-                      args.ts_flag)
-            ir2tagset_iteration(args.iter_num, args.postfix, *params)
+            for srcid, tagsets in one_tagsets_dict.items():
+                point_tagset = 'none'
+                for tagset in tagsets:
+                    if tagset in point_tagsets:
+                        point_tagset = tagset
+                        break
+                self.point_dict[srcid] = point_tagset
             """
-        elif args.avgnum>1:
-            entity_recognition_from_ground_truth_get_avg(args.avgnum,
-                building_list=args.source_building_list,
-                source_sample_num_list=args.sample_num_list,
-                target_building=args.target_building,
-                use_cluster_flag=args.use_cluster_flag,
-                use_brick_flag=args.use_brick_flag,
-                eda_flag=args.eda_flag,
-                ts_flag=args.ts_flag,
-                negative_flag=args.negative_flag,
-                n_jobs=args.n_jobs,
-                worker_num=args.worker_num)
-    elif args.prog == 'crf_entity':
-        """
-        params = (args.source_building_list,
-                  args.sample_num_list,
-                  args.target_building,
-                  args.use_cluster_flag,
-                  args.use_brick_flag,
-                  args.eda_flag,
-                  args.negative_flag,
-                  args.debug_flag,
-                  args.n_jobs,
-                  args.ts_flag)
-        crf_entity_recognition_iteration(args.iter_num, args.postfix, *params)
-        """
-        params = (args.source_building_list,
-                  args.sample_num_list,
-                  args.target_building,
-                  args.use_cluster_flag,
-                  args.use_brick_flag,
-                  args.crftype,
-                  args.eda_flag,
-                  args.negative_flag,
-                  args.debug_flag,
-                  args.n_jobs,
-                  args.ts_flag,
-                  args.inc_num,
-                  args.crfqs,
-                  args.entqs
-                  )
-        char2tagset_iteration(args.iter_num, args.postfix, *params)
-    elif args.prog == 'result':
-        assert args.exp_type in ['crf', 'entity', 'crf_entity', 'entity_iter',
-                                 'etc', 'entity_ts', 'cls']
-        if args.exp_type == 'crf':
-            crf_result()
-        elif args.exp_type == 'entity':
-            entity_result()
-        elif args.exp_type == 'crf_entity':
-            crf_entity_result()
-        elif args.exp_type == 'entity_iter':
-            entity_iter_result()
-        elif args.exp_type == 'entity_ts':
-            entity_ts_result()
-        elif args.exp_type == 'cls':
-            cls_comp_result()
-        elif args.exp_type == 'etc':
-            etc_result()
 
-    elif args.prog == 'init':
-        init()
-    else:
-        #print('Either learn or predict should be provided')
-        assert(False)
+        self.phrase_dict = make_phrase_dict(self.sentence_dict,
+                                            self.label_dict)
+        # validation
+        for srcid in self.target_srcids:
+            assert srcid in self.tagsets_dict
+
+
+    def update_model(self, srcids):
+        self.learning_srcids += srcids
+        self.char2ir.update_model(srcids)
+        #phrases_pred = self.char2ir.predict(srcids)
+        #self.ir2tagsets.update_phrases(phrases_pred)
+        self.ir2tagsets.update_model(srcids)
+
+    def predict(self, target_srcids=None):
+        if not target_srcids:
+            target_srcids = self.target_srcids
+        pred_bios = self.char2ir.predict(target_srcids)
+        pred_phrases = make_phrase_dict(self.sentence_dict, pred_bios)
+        phrases = {srcid: self.phrase_dict[srcid]
+                          if srcid in self.learning_srcids
+                          else pred_phrases[srcid]
+                   for srcid in target_srcids}
+        self.ir2tagsets.update_phrases(phrases)
+        pred = self.ir2tagsets.predict(target_srcids)
+        return pred
+
+    def predict_proba(self, target_srcids=None):
+        if not target_srcids:
+            target_srcids = self.target_srcids
+        phrases = self.char2ir.predict(target_srcids)
+        phrases_proba = self.char2ir.predict_proba(target_srcids)
+        self.ir2tagsets.update_phrases(phrases)
+        proba = self.ir2tagsets.predict_proba(target_srcids)
+        return proba
+
+    def select_informative_samples(self, sample_num):
+        char2ir_num = int(sample_num / 2)
+        ir2tagsets_num = sample_num - char2ir_num
+        char2ir_srcids = self.char2ir.select_informative_samples(char2ir_num)
+        ir2tagsets_srcids = self.ir2tagsets.select_informative_samples(
+                                ir2tagsets_num)
+        return list(set(char2ir_srcids + ir2tagsets_srcids))
+
