@@ -1,20 +1,22 @@
 import arrow
 import pdb
 
-from char2ir2 import Char2Ir
+from scrabble2 import Scrabble
 from data_model import *
 
 t0 = arrow.get()
 
-column_names = ['VendorGivenName', 
-                 'BACnetName', 
-                 'BACnetDescription']
+connect('oracle')
 
+
+
+column_names = ['VendorGivenName',
+                 'BACnetName',
+                 'BACnetDescription']
 
 target_building = 'ebu3b'
 source_buildings = ['ap_m', 'ebu3b']
-source_sample_num_list = [100, 0]
-
+source_sample_num_list = [5, 0]
 
 building_sentence_dict = dict()
 building_label_dict = dict()
@@ -32,7 +34,7 @@ for building in source_buildings:
                 fullparsing = one_fullparsing
             else:
                 fullparsing += ['O'] + one_fullparsing
-                #  This format is alinged with the sentence 
+                #  This format is alinged with the sentence
                 #  configormation rule.
         label_dict[srcid] = fullparsing
 
@@ -56,27 +58,21 @@ for building in source_buildings:
 target_srcids = list(building_label_dict[target_building].keys())
 t1 = arrow.get()
 print(t1-t0)
+scrabble = Scrabble(target_building,
+                    target_srcids,
+                    building_label_dict,
+                    building_sentence_dict,
+                    building_tagsets_dict,
+                    source_buildings,
+                    source_sample_num_list
+                    )
 
-char2ir = Char2Ir(target_building, 
-                  target_srcids,
-                  building_label_dict,
-                  building_sentence_dict,
-                  source_buildings,
-                  source_sample_num_list,
-                  conf={
-                      'use_cluster_flag': True,
-                      #'use_brick_flag': False
-                  })
-
-char2ir.update_model([])
-
-for i in range(0,5):
-    t1 = arrow.get()
-    new_srcids = char2ir.select_informative_samples(10)
-    char2ir.update_model(new_srcids)
+scrabble.update_model([])
+for i in range(0, 20):
     t2 = arrow.get()
-    print('{0}th took: {1}'.format(i, t2-t1))
-
-pred = char2ir.predict(target_srcids)
-proba = char2ir.predict_proba(target_srcids)
-pdb.set_trace()
+    new_srcids = scrabble.select_informative_samples(10)
+    scrabble.update_model(new_srcids)
+    pred = scrabble.predict(target_srcids + scrabble.learning_srcids)
+    proba = scrabble.predict_proba(target_srcids)
+    t3 = arrow.get()
+    print('{0}th took {1}'.format(i, t3 - t2))

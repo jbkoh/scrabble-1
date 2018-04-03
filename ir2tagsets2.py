@@ -1,6 +1,8 @@
 import os
 from uuid import uuid4
 from operator import itemgetter
+from itertools import chain
+from copy import deepcopy
 
 import numpy as np
 import pickle
@@ -8,6 +10,7 @@ import pickle
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, \
     GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression, SGDClassifier, PassiveAggressiveClassifier
+from sklearn.svm import LinearSVC, SVC
 from sklearn.multiclass import OneVsRestClassifier, OneVsOneClassifier
 from sklearn.feature_selection import SelectFromModel, VarianceThreshold, chi2, SelectPercentile, SelectKBest
 from sklearn.pipeline import Pipeline
@@ -18,8 +21,10 @@ from skmultilearn.problem_transform import LabelPowerset, ClassifierChain, \
     BinaryRelevance
 from sklearn.metrics import precision_recall_fscore_support
 
+from time_series_to_ir import TimeSeriesToIR
 from base_scrabble import BaseScrabble
 from common import *
+from hcc import StructuredClassifierChain
 from brick_parser import pointTagsetList        as  point_tagsets,\
                          locationTagsetList     as  location_tagsets,\
                          equipTagsetList        as  equip_tagsets,\
@@ -27,6 +32,9 @@ from brick_parser import pointTagsetList        as  point_tagsets,\
                          equipSubclassDict      as  equip_subclass_dict,\
                          locationSubclassDict   as  location_subclass_dict,\
                          tagsetTree             as  tagset_tree
+
+def gen_uuid():
+    return str(uuid4())
 
 tagset_list = point_tagsets + location_tagsets + equip_tagsets
 tagset_list.append('networkadapter')
@@ -65,9 +73,7 @@ def calc_leaves_depth(tree, d=dict(), depth=0):
                     d[k] = v
     return d
 
-def augment_tagset_tree(tagsets):
-    global tagset_tree
-    global subclass_dict
+def augment_tagset_tree(tagsets, subclass_dict):
     for tagset in set(tagsets):
         if '-' in tagset:
             classname = tagset.split('-')[0]
@@ -83,8 +89,6 @@ def augment_tagset_tree(tagsets):
                 extend_tree(tagset_tree, classname, {tagset:[]})
 
 
-# TODO: Initialize tagset_list
-
 class Ir2Tagsets(BaseScrabble):
     """docstring for Ir2Tagsets"""
 
@@ -96,27 +100,25 @@ class Ir2Tagsets(BaseScrabble):
                  building_tagsets_dict,
                  source_buildings=[],
                  source_sample_num_list=[],
-                 conf={
-                     'use_cluster_flag': False,
-                     # 'use_brick_flag': False
-                 }):
-        self.source_buildings = source_buildings
-        self.target_building = target_building
-        if self.target_building not in self.source_buildings:
-            self.source_buildings.append(self.target_building)
-            self.source_sample_num_list += 0
-        self.source_sample_num_list = source_sample_num_list
-        self.use_cluster_flag = conf['use_cluster_flag']
-        # self.use_brick_flag = conf['use_brick_flag']
-        self.building_tagsets_dict = building_tagsets_dict
-        self.use_brick_flag = False  # Temporarily disable it
-        self.building_sentence_dict = building_sentence_dict
-        self.building_label_dict = building_label_dict
-        self.target_srcids = target_srcids
-        self._init_data()
+                 learning_srcids=[],
+                 conf={}):
+        super(Ir2Tagsets, self).__init__(
+                 target_building,
+                 target_srcids,
+                 building_label_dict,
+                 building_sentence_dict,
+                 building_tagsets_dict,
+                 source_buildings,
+                 source_sample_num_list,
+                 learning_srcids,
+                 conf)
         self.ts2ir = None
         self.ts_feature_filename = 'TS_Features/features.pkl'
 
+        if 'use_cluster_flag' in conf:
+            self.use_cluster_flag = conf['use_cluster_flag']
+        else:
+            self.use_cluster_flag = True
         if 'eda_flag' in conf:
             self.eda_flag = conf['eda_flag'], 
         else:
@@ -128,7 +130,7 @@ class Ir2Tagsets(BaseScrabble):
         if 'n_jobs' in conf:
             self.n_jobs = conf['n_jobs']
         else:
-            n_jobs = 6
+            self.n_jobs = 6
         if 'ts_flag' in conf:
             self.ts_flag = conf['ts_flag']
         else:
@@ -144,14 +146,20 @@ class Ir2Tagsets(BaseScrabble):
         if 'n_estimators' in conf:
             self.n_estimators = conf['n_estimators']
         else:
-            self.n_estimators = 50 # TODO: Find the proper value
+            self.n_estimators = 10 # TODO: Find the proper value
         if 'vectorizer_type' in conf:
             self.vectorizer_type = conf['vectorizer_type']
         else:
             self.vectorizer_type = 'tfidf'
+        if 'query_strategy' in conf:
+            self.query_strategy = conf['query_strategy']
+        else:
+            self.query_strategy = 'phrase_util'
+        self._init_data()
         self._init_brick()
 
     def _init_brick(self):
+        self.brick_srcids = []
         self.tagset_list = point_tagsets + location_tagsets + equip_tagsets
         self.tagset_list.append('networkadapter')
 
@@ -162,10 +170,10 @@ class Ir2Tagsets(BaseScrabble):
         self.subclass_dict['networkadapter'] = list()
         self.subclass_dict['unknown'] = list()
         self.subclass_dict['none'] = list()
+        self.tagset_tree = deepcopy(tagset_tree)
         
 
     def _init_data(self):
-        self.learning_srcids = []
         self.sentence_dict = {}
         self.label_dict = {}
         self.tagsets_dict = {}
@@ -178,14 +186,16 @@ class Ir2Tagsets(BaseScrabble):
             one_label_dict = self.building_label_dict[building]
             self.label_dict.update(one_label_dict)
 
-            sample_srcid_list = select_random_samples(building,
-                                                      one_label_dict.keys(),
-                                                      source_sample_num,
-                                                      self.use_cluster_flag)
-            self.learning_srcids += sample_srcid_list
+            if not self.learning_srcids:
+                sample_srcid_list = select_random_samples(
+                                        building,
+                                        one_label_dict.keys(),
+                                        source_sample_num,
+                                        self.use_cluster_flag)
+                self.learning_srcids += sample_srcid_list
             one_tagsets_dict = self.building_tagsets_dict[building]
             self.tagsets_dict.update(one_tagsets_dict)
-            for srcid, tagsets in one_tagsets_dict:
+            for srcid, tagsets in one_tagsets_dict.items():
                 point_tagset = 'none'
                 for tagset in tagsets:
                     if tagset in point_tagsets:
@@ -195,23 +205,107 @@ class Ir2Tagsets(BaseScrabble):
 
         self.phrase_dict = make_phrase_dict(self.sentence_dict, 
                                             self.label_dict)
+        # validation
+        for srcid in self.target_srcids:
+            assert srcid in self.tagsets_dict
+
+
     def _extend_tagset_list(self, new_tagsets):
         self.tagset_list += new_tagsets
         self.tagset_list = list(set(self.tagset_list))
 
     def update_model(self, srcids):
         self.learning_srcids += srcids
-        self._extend_tagset_list([self.tagsets_dict[srcid] 
-                            for srcid in self.learning_srcids + 
-                                         self.target_srcids])
-        augment_tagset_tree(tagset_list)
+        self.target_srcids = [srcid for srcid in self.target_srcids
+                              if srcid not in self.learning_srcids]
+        invalid_num = sum([srcid not in self.tagsets_dict for srcid in 
+                           self.learning_srcids + self.target_srcids]) #debug
+        self._extend_tagset_list(reduce(adder, [self.tagsets_dict[srcid]
+            for srcid in self.learning_srcids + self.target_srcids]))
+        augment_tagset_tree(self.tagset_list, self.subclass_dict)
         self._build_tagset_classifier(self.learning_srcids,
                                       self.target_srcids,
                                       validation_srcids=[])
+    def _determine_used_phrases(self, phrases, tagsets):
+        phrases_usages = list()
+        pred_tags = reduce(adder, [tagset.split('_') for tagset in tagsets], [])
+        used_cnt = 0.0
+        unused_cnt = 0.0
+        for phrase in phrases:
+            phrase_tags = phrase.split('_')
+            for tag in phrase_tags:
+                if tag in ['leftidentifier', 'rightidentifier']:
+                    continue
+                if tag in pred_tags:
+                    used_cnt += 1 / len(phrase_tags)
+                else:
+                    unused_cnt += 1 / len(phrase_tags)
+        if used_cnt == 0:
+            score = 0
+        else:
+            score = used_cnt / (used_cnt + unused_cnt) 
+        return score
 
-    # ESSENTIAL
+    def ir2tagset_al_query_samples_phrase_util(self,
+                                               test_srcids,
+                                               building,
+                                               pred_tagsets_dict,
+                                               inc_num):
+        phrase_usage_dict = {}
+        for srcid in test_srcids:
+            pred_tagsets = pred_tagsets_dict[srcid]
+            phrase_usage_dict[srcid] = self._determine_used_phrases(
+                                           self.phrase_dict[srcid],
+                                           pred_tagsets)
+
+        phrase_usages = list(phrase_usage_dict.values())
+        mean_usage_rate = np.mean(phrase_usages)
+        std_usage_rate = np.std(phrase_usages)
+        # Select underexploited sentences.
+        threshold = mean_usage_rate - std_usage_rate
+        todo_sentence_dict = dict((srcid, alpha_tokenizer(''.join(
+                                   self.sentence_dict[srcid])))
+                                   for srcid, usage_rate
+                                   in phrase_usage_dict.items()
+                                   if usage_rate < threshold and srcid in test_srcids)
+        cluster_dict = get_cluster_dict(building)
+        todo_srcids = select_random_samples(building, \
+                              list(todo_sentence_dict.keys()),
+                              min(inc_num, len(todo_sentence_dict)), \
+                              True,\
+                              reverse=True,
+                              cluster_dict=cluster_dict,
+                              shuffle_flag=False
+                             )
+        #if the numbers are not enough randomly select more:
+        if len(todo_srcids) < inc_num:
+            more_num = inc_num - len(todo_srcids)
+            todo_sentence_dict = dict((srcid, alpha_tokenizer(''.join(
+                                       self.sentence_dict[srcid])))
+                                       for srcid, usage_rate
+                                       in phrase_usage_dict.items()
+                                       if srcid in test_srcids)
+            cluster_dict = get_cluster_dict(building)
+            todo_srcids = select_random_samples(building, \
+                                  list(todo_sentence_dict.keys()),
+                                  min(more_num, len(todo_sentence_dict)), \
+                                  True,\
+                                  cluster_dict=cluster_dict,
+                                  shuffle_flag=True
+                                 )
+        return todo_srcids
+
     def select_informative_samples(self, sample_num):
-        pass
+        pred = self.predict(self.target_srcids)
+        if self.query_strategy == 'phrase_util':
+            new_srcids = self.ir2tagset_al_query_samples_phrase_util(
+                                self.target_srcids,
+                                self.target_building,
+                                pred,
+                                sample_num)
+        else:
+            raise ValueError('Query Strategy Wrong: {0}'.format(query_strategy))
+        return new_srcids
 
     # ESSENTIAL
     def learn_auto(self, iter_num=1):
@@ -220,7 +314,7 @@ class Ir2Tagsets(BaseScrabble):
         pass
 
     def _augment_phrases_with_ts(self, phrase_dict, srcids, ts2ir):
-        with open(ts_feature_filename, 'rb') as fp:
+        with open(self.ts_feature_filename, 'rb') as fp:
             ts_features = pickle.load(fp, encoding='bytes')
         ts_tags_pred = ts2ir.predict(ts_features, srcids)
 
@@ -235,9 +329,9 @@ class Ir2Tagsets(BaseScrabble):
         #return self.tagset_classifier, self.tagset_vectorizer, self.tagset_binarizer, self.ts2ir
         phrase_dict = {srcid: self.phrase_dict[srcid] 
                        for srcid in target_srcids}
-        if ts2ir:
-            phrase_dict = self._augment_phrases_with_ts(phrase_dict, srcids, ts2ir)
-        doc = [' '.join(phrase_dict[srcid]) for srcid in srcids]
+        if self.ts_flag:
+            phrase_dict = self._augment_phrases_with_ts(phrase_dict, target_srcids, self.ts2ir)
+        doc = [' '.join(phrase_dict[srcid]) for srcid in target_srcids]
         vect_doc = self.tagset_vectorizer.transform(doc) # should this be fit_transform?
 
         certainty_dict = dict()
@@ -252,10 +346,10 @@ class Ir2Tagsets(BaseScrabble):
         pred_tagsets_dict = dict()
         pred_certainty_dict = dict()
         pred_point_dict = dict()
-        for i, (srcid, pred) in enumerate(zip(srcids, pred_mat)):
+        for i, (srcid, pred) in enumerate(zip(target_srcids, pred_mat)):
         #for i, (srcid, pred, point_pred) \
                 #in enumerate(zip(srcids, pred_mat, point_mat)):
-            pred_tagsets_dict[srcid] = binarizer.inverse_transform(\
+            pred_tagsets_dict[srcid] = self.tagset_binarizer.inverse_transform(\
                                             np.asarray([pred]))[0]
             #pred_tagsets_dict[srcid] = list(binarizer.inverse_transform(pred)[0])
             #pred_point_dict[srcid] = point_tagsets[point_pred]
@@ -282,7 +376,7 @@ class Ir2Tagsets(BaseScrabble):
     def _build_point_classifier(self):
         # TODO: Implement this later if needed
         #       Currently, just collected garbages.
-        point_classifier = RandomForestClassifier(
+        self.point_classifier = RandomForestClassifier(
                                n_estimators=self.n_estimators,
                                n_jobs=n_jobs)
         # Dataset only for points. Just for testing.
@@ -318,33 +412,34 @@ class Ir2Tagsets(BaseScrabble):
             pdb.set_trace()
 
 
-    def _augment_with_ts(self, test_phrases_dict,):
+    def _augment_with_ts(self, test_phrases_dict):
         # TODO: Implement below
         ts_learning_srcids = list()
-        learning_tags_dict = dict([(srcid, splitter(tagset)) for srcid, tagset
-                                   in learning_point_dict.items()])
+        learning_tags_dict = {srcid: splitter(self.point_dict[srcid])
+                              for srcid in self.learning_srcids}
+
         tag_binarizer = MultiLabelBinarizer()
-        tag_binarizer.fit(map(splitter, learning_point_dict.values()))
+        tag_binarizer.fit(map(splitter, self.point_dict.values()))
         with open(self.ts_feature_filename, 'rb') as fp:
             ts_features = pickle.load(fp, encoding='bytes')
         new_ts_features = list()
         for ts_feature in ts_features:
             feats = ts_feature[0]
             srcid = ts_feature[2]
-            if srcid in learning_srcids + validation_srcids:
-                point_tagset = learning_point_dict[srcid]
+            if srcid in self.learning_srcids + self.validation_srcids:
+                point_tagset = self.point_dict[srcid]
                 point_tags = point_tagset.split('_')
                 point_vec = tag_binarizer.transform([point_tags])
                 new_feature = [feats, point_vec, srcid]
                 new_ts_features.append(new_feature)
-            elif srcid in test_srcids:
+            elif srcid in self.target_srcids:
                 new_ts_features.append(ts_feature)
         ts_features = new_ts_features
 
         self.ts2ir = TimeSeriesToIR(mlb=tag_binarizer)
-        self.ts2ir.fit(ts_features, learning_srcids, validation_srcids, learning_tags_dict)
-        learning_ts_tags_pred = self.ts2ir.predict(ts_features, learning_srcids)
-        for srcid, ts_tags in zip(learning_srcids, \
+        self.ts2ir.fit(ts_features, self.learning_srcids, self.validation_srcids, learning_tags_dict)
+        learning_ts_tags_pred = self.ts2ir.predict(ts_features, self.learning_srcids)
+        for srcid, ts_tags in zip(self.learning_srcids, \
                                   tag_binarizer.inverse_transform(
                                       learning_ts_tags_pred)):
             #learning_phrase_dict[srcid] += list(ts_tags)
@@ -363,13 +458,13 @@ class Ir2Tagsets(BaseScrabble):
             #test_srcids .append(ts_srcid) # TODO: Validate if this works.
             test_phrase_dict[srcid] += list(ts_tags)
 
-    def _augment_negative_examples(self):
+    def _augment_negative_examples(self, doc, srcids):
         negative_doc = []
-        negative_srcids = []
         negative_truths_dict = {}
-        for srcid in learning_srcids:
-            true_tagsets = list(set(learning_truths_dict[srcid]))
-            sentence = learning_phrase_dict[srcid]
+        negative_srcids = []
+        for srcid in self.learning_srcids:
+            true_tagsets = list(set(self.tagsets_dict[srcid]))
+            sentence = self.phrase_dict[srcid]
             for tagset in true_tagsets:
                 negative_srcid = srcid + ';' + gen_uuid()
                 removing_tagsets = set()
@@ -402,57 +497,38 @@ class Ir2Tagsets(BaseScrabble):
         for i in range(0,50):
             # Add empty examples
             negative_srcid = gen_uuid()
-            negative_srcids.append(negative_srcid)
             negative_doc.append('')
+            negative_srcids.append(negative_srcid)
             negative_truths_dict[negative_srcid] = []
+        doc += negative_doc
+        srcids += negative_srcids
+        self.tagsets_dict.update(negative_truths_dict)
+        return doc, srcids
+
             
-    def _augment_brick_samples(self):
+    def _augment_brick_samples(self, doc, srcids):
         brick_truths_dict = dict()
-        brick_srcids = []
+        self.brick_srcids = []
         brick_doc = []
         logging.info('Start adding Brick samples')
-        #brick_copy_num = int(len(learning_phrase_dict) * 0.04)
-        #if brick_copy_num < 4:
-        #brick_copy_num = 4
-        #brick_copy_num = 2
         brick_copy_num = 6
-        #brick_truths_dict = dict((gen_uuid(), [tagset]) \
-        #                          for tagset in tagset_list\
-        #                          for j in range(0, brick_copy_num))
-        #for learning_srcid, true_tagsets in learning_truths_dict.items():
-        #    for true_tagset in set(true_tagsets):
-        #        brick_truths_dict[gen_uuid()] = [true_tagset]
-#
-        #brick_srcids = list(brick_truths_dict.keys())
-        #brick_doc = [brick_truths_dict[tagset_id][0].replace('_', ' ')
-        #                 for tagset_id in brick_srcids]
-        brick_truths_dict = dict()
-        brick_doc = list()
-        brick_srcids = list()
+        self.brick_tagsets_dict = dict()
+        self.brick_doc = list()
         for tagset in tagset_list:
             for j in range(0, brick_copy_num):
                 #multiplier = random.randint(2, 6)
                 srcid = 'brick;' + gen_uuid()
-                brick_srcids.append(srcid)
-                brick_truths_dict[srcid] = [tagset]
+                self.brick_srcids.append(srcid)
+                self.brick_tagsets_dict[srcid] = [tagset]
                 tagset_doc = list()
                 for tag in tagset.split('_'):
                     tagset_doc += [tag] * random.randint(1,2)
                 brick_doc.append(' '.join(tagset_doc))
+        doc += brick_doc
+        self.tagsets_dict.update(self.brick_tagsets_dict)
+        srcids += self.brick_srcids
+        return doc, srcids
 
-        """
-        if eda_flag:
-            for building in set(building_list + [target_building]):
-                for i in range(0, brick_copy_num):
-                    for tagset in tagset_list:
-                        brick_srcid = gen_uuid()
-                        brick_srcids.append(brick_srcid)
-                        brick_truths_dict[brick_srcid] = [tagset]
-                        tags  = tagset.split('_') + \
-                                [building + '#' + tag for tag in tagset.split('_')]
-                        brick_doc.append(' '.join(tags))
-        """
-        logging.info('Finished adding Brick samples')
 
     def _augment_eda(self):
         if eda_flag:
@@ -533,14 +609,9 @@ class Ir2Tagsets(BaseScrabble):
                                  target_srcids,
                                  validation_srcids):
 
-        # Config variables
-        # TODO:
-
-        validation_srcids = list(validation_truths_dict.keys())
         learning_srcids = deepcopy(learning_srcids)
 
         # Update TagSet pool to include TagSets not in Brick.
-        # TODO: Maybe this should be done in initialization stage.
         orig_sample_num = len(learning_srcids)
         new_tagset_list = tree_flatter(self.tagset_tree, [])
         new_tagset_list = new_tagset_list + [ts for ts in self.tagset_list \
@@ -550,13 +621,14 @@ class Ir2Tagsets(BaseScrabble):
         self.tagset_binarizer.fit([self.tagset_list])
         assert self.tagset_list == self.tagset_binarizer.classes_.tolist()
 
-        learning_tagsets_dict = {srcid: self.tagsets_dict[srcid] 
-                                 for srcid in learning_srcids}
+        #self.tagsets_dict = {srcid: self.tagsets_dict[srcid] 
+        #                         for srcid in learning_srcids}
 
 
         ## Init brick tag_list
         # TODO: Maybe this should be done in initialization stage.
-        self.tag_list = list(set(reduce(adder, map(splitter, tagset_list))))
+        self.tag_list = list(set(reduce(adder, map(splitter, 
+                                                   self.tagset_list))))
 
         # All possible vocabularies.
         vocab_dict = dict([(tag, i) for i, tag in enumerate(self.tag_list)])
@@ -577,26 +649,27 @@ class Ir2Tagsets(BaseScrabble):
             raise Exception('Wrong vectorizer type: {0}'
                                 .format(self.vectorizer_type))
 
-        if ts_flag:
+        if self.ts_flag:
             pass
             #TODO: Run self._augment_with_ts()
 
         ## Transform learning samples
         learning_doc = [' '.join(self.phrase_dict[srcid])
                         for srcid in learning_srcids]
-        test_doc = [' '.join(phrase_dict[srcid]) 
-                    for srcid in test_srcids]
+        test_doc = [' '.join(self.phrase_dict[srcid])
+                    for srcid in target_srcids]
 
         ## Augment with negative examples.
         if self.negative_flag:
-            pass
-            #TODO: self._augment_negative_examples()
+            learning_doc, learning_srcids  = \
+                self._augment_negative_examples(learning_doc, learning_srcids)
 
 
         ## Init Brick samples.
         if self.use_brick_flag:
-            pass
-            # TODO: self._augment_brick_samples()
+            learning_doc, learning_srcids  = \
+                self._augment_brick_samples(learning_doc, 
+                                            learning_srcids)
 
         self.tagset_vectorizer.fit(learning_doc + test_doc)# + brick_doc)
 
@@ -606,13 +679,13 @@ class Ir2Tagsets(BaseScrabble):
             # TODO: self._augment_eda()
         else:
             # Make TagSet vectors.
-            learning_vect_doc = self.tagset_vectorizer.transform(learning_doc)
+            learning_vect_doc = self.tagset_vectorizer.transform(learning_doc)\
                                     .todense()
 
         truth_mat = csr_matrix([self.tagset_binarizer.transform(
-                                    [learning_tagsets_dict[srcid]])[0]
+                                    [self.tagsets_dict[srcid]])[0]
                                 for srcid in learning_srcids])
-        if eda_flag:
+        if self.eda_flag:
             zero_vectors = self.tagset_binarizer.transform(\
                         [[] for i in range(0, unlabeled_vect_doc.shape[0])])
             truth_mat = vstack([truth_mat, zero_vectors])
@@ -620,13 +693,13 @@ class Ir2Tagsets(BaseScrabble):
 
         logging.info('Start learning multi-label classifier')
         ## Learn the classifier. StructuredCC is the default model.
-        if tagset_classifier_type == 'RandomForest':
+        if self.tagset_classifier_type == 'RandomForest':
             def meta_rf(**kwargs):
                 #return RandomForestClassifier(**kwargs)
-                return RandomForestClassifier(n_jobs=n_jobs, n_estimators=150)
+                return RandomForestClassifier(n_jobs=self.n_jobs, n_estimators=150)
             meta_classifier = meta_rf
             params_list_dict = {}
-        elif tagset_classifier_type == 'StructuredCC_BACKUP':
+        elif self.tagset_classifier_type == 'StructuredCC_BACKUP':
             #feature_selector = SelectFromModel(LinearSVC(C=0.001))
             feature_selector = SelectFromModel(LinearSVC(C=0.01, penalty='l1', dual=False))
             base_base_classifier = PassiveAggressiveClassifier(loss='squared_hinge', C=0.1)
@@ -644,7 +717,7 @@ class Ir2Tagsets(BaseScrabble):
                                     self.tagset_vectorizer.vocabulary,
                                     n_jobs,
                                     use_brick_flag)
-        elif tagset_classifier_type == 'Project':
+        elif self.tagset_classifier_type == 'Project':
             def meta_proj(**kwargs):
                 #base_classifier = LinearSVC(C=20, penalty='l1', dual=False)
                 base_classifier = SVC(kernel='rbf', C=10, class_weight='balanced')
@@ -658,7 +731,7 @@ class Ir2Tagsets(BaseScrabble):
             meta_classifier = meta_proj
             params_list_dict = {}
 
-        elif tagset_classifier_type == 'CC':
+        elif self.tagset_classifier_type == 'CC':
             def meta_cc(**kwargs):
                 feature_selector = SelectFromModel(LinearSVC(C=1))
                 #feature_selector = SelectFromModel(LinearSVC(C=0.01, penalty='l1', dual=False))
@@ -677,7 +750,7 @@ class Ir2Tagsets(BaseScrabble):
             meta_classifier = meta_cc
             params_list_dict = {}
 
-        elif tagset_classifier_type == 'StructuredCC':
+        elif self.tagset_classifier_type == 'StructuredCC':
             def meta_scc(**kwargs):
                 feature_selector = SelectFromModel(LinearSVC(C=1))
                 #feature_selector = SelectFromModel(LinearSVC(C=0.01, penalty='l1', dual=False))
@@ -694,10 +767,10 @@ class Ir2Tagsets(BaseScrabble):
                 tagset_classifier = StructuredClassifierChain(
                                     base_classifier,
                                     self.tagset_binarizer,
-                                    subclass_dict,
+                                    self.subclass_dict,
                                     self.tagset_vectorizer.vocabulary,
-                                    n_jobs,
-                                    use_brick_flag,
+                                    self.n_jobs,
+                                    self.use_brick_flag,
                                     self.tagset_vectorizer)
                 return tagset_classifier
             meta_classifier = meta_scc
@@ -719,14 +792,14 @@ class Ir2Tagsets(BaseScrabble):
                 'min_samples_split': [2,4,8]
             }
             params_list_dict = gb_params_list_dict
-        elif tagset_classifier_type == 'StructuredCC_RF':
-            base_classifier = RandomForest()
+        elif self.tagset_classifier_type == 'StructuredCC_RF':
+            base_classifier = RandomForestClassifier()
             tagset_classifier = StructuredClassifierChain(base_classifier,
                                                           self.tagset_binarizer,
                                                           subclass_dict,
                                                           self.tagset_vectorizer.vocabulary,
                                                           n_jobs)
-        elif tagset_classifier_type == 'StructuredCC_LinearSVC':
+        elif self.tagset_classifier_type == 'StructuredCC_LinearSVC':
             def meta_scc_svc(**kwargs):
                 base_classifier = LinearSVC(loss='hinge', tol=1e-5,\
                                             max_iter=2000, C=2,
@@ -740,13 +813,13 @@ class Ir2Tagsets(BaseScrabble):
                 return tagset_classifier
             params_list_dict = {}
             meta_classifier = meta_scc_svc
-        elif tagset_classifier_type == 'OneVsRest':
+        elif self.tagset_classifier_type == 'OneVsRest':
             base_classifier = LinearSVC(loss='hinge', tol=1e-5,\
                                         max_iter=2000, C=2,
                                         fit_intercept=False,
                                         class_weight='balanced')
             tagset_classifier = OneVsRestClassifier(base_classifier)
-        elif tagset_classifier_type == 'Voting':
+        elif self.tagset_classifier_type == 'Voting':
             def meta_voting(**kwargs):
                 return VotingClassifier(self.tagset_binarizer, self.tagset_vectorizer,
                                         tagset_tree, tagset_list)
@@ -758,26 +831,22 @@ class Ir2Tagsets(BaseScrabble):
         if not isinstance(truth_mat, csr_matrix):
             truth_mat = csr_matrix(truth_mat)
 
-        # TODO: This was for hyper-parameter optimization.
-        #       But I disabled it because it's too slow.
-        self.tagset_classifier = self._parameter_validation(learning_vect_doc[:orig_sample_num],
-                             truth_mat[:orig_sample_num],
-                             orig_learning_srcids,
-                             params_list_dict, meta_classifier, self.tagset_vectorizer,
-                             self.tagset_binarizer, source_target_buildings, eda_flag)
+        # TODO: Hyper-parameter optimization. (But expect it'd be slow.)
+        best_params = {'learning_rate':0.1, 'subsample':0.25}
+        self.tagset_classifier  = meta_classifier(**best_params)
 
         # Actual fitting.
         if isinstance(self.tagset_classifier, StructuredClassifierChain):
             self.tagset_classifier.fit(learning_vect_doc, truth_mat.toarray(), \
                                   orig_sample_num=len(learning_vect_doc)
-                                  - len(brick_srcids))
+                                  - len(self.brick_srcids))
         else:
             self.tagset_classifier.fit(learning_vect_doc, truth_mat.toarray())
-        point_classifier.fit(point_vect_doc, point_truth_mat)
+        #self.point_classifier.fit(point_vect_doc, point_truth_mat)
         logging.info('Finished learning multi-label classifier')
 
-    def _parameter_validation(vect_doc, truth_mat, srcids, params_list_dict,\
-                             meta_classifier, vectorizer, binarizer, \
+    def _parameter_validation(vect_doc, truth_mat, srcids, params_list_dict,
+                             meta_classifier, vectorizer, binarizer,
                              source_target_buildings, eda_flag):
         # TODO: This is not effective for now. Do I need one?
         #best_params = {'n_estimators': 50, 'criterion': 'entropy', 'max_features': 'auto', 'max_depth': 5, 'min_samples_leaf': 2, 'min_samples_split': 2}
@@ -879,4 +948,7 @@ class Ir2Tagsets(BaseScrabble):
         best_mf1 = validation_result['macro_f1']
 
         return meta_classifier(**best_params)
+
+    def update_phrases(self, phrases):
+        self.phrase_dict.update(phrases)
 

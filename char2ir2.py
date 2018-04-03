@@ -1,6 +1,7 @@
 import os
 from uuid import uuid4
 from operator import itemgetter
+from pathlib import Path
 
 import pycrfsuite
 from bson.binary import Binary as BsonBinary
@@ -13,6 +14,7 @@ from mongo_models import store_model, get_model, get_tags_mapping, \
 from base_scrabble import BaseScrabble
 from common import *
 
+curr_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
 def gen_uuid():
     return str(uuid4())
@@ -26,49 +28,66 @@ class Char2Ir(BaseScrabble):
                  building_sentence_dict,
                  source_buildings=[],
                  source_sample_num_list=[],
-                 conf={
-                     'use_cluster_flag': False,
-                     # 'use_brick_flag': False
-                 }):
-        self.source_buildings = source_buildings
-        self.target_building = target_building
-        if self.target_building not in self.source_buildings:
-            self.source_buildings.append(self.target_building)
-            self.source_sample_num_list += 0
-        self.source_sample_num_list = source_sample_num_list
-        self.use_cluster_flag = conf['use_cluster_flag']
-        # self.use_brick_flag = conf['use_brick_flag']
-        self.use_brick_flag = False  # Temporarily disable it
-        self.building_sentence_dict = building_sentence_dict
-        self.building_label_dict = building_label_dict
-        self._init_data()
-        self.target_srcids = target_srcids
+                 learning_srcids=[],
+                 conf={}
+                 ):
+        super(Char2Ir, self).__init__(
+                 target_building,
+                 target_srcids,
+                 building_label_dict,
+                 building_sentence_dict,
+                 {},
+                 source_buildings,
+                 source_sample_num_list,
+                 learning_srcids,
+                 conf)
         self.model_uuid = None
-        self.crftype = 'crfsuite'
-        self.query_strategy = 'confidence'
+
+        if 'crftype' in conf:
+            self.crftype = conf['crftype']
+        else:
+            self.crftype = 'crfsuite'
+        if 'query_strategy' in conf:
+            self.query_strategy = conf['query_strategy']
+        else:
+            self.query_strategy = 'confidence'
+        if 'user_cluster_flag' in conf:
+            self.use_cluster_flag = conf['use_cluster_flag']
+        else:
+            self.use_cluster_flag = True
+
+        # Note: Hardcode to disable use_brick_flag
+        """
+        if 'use_brick_flag' in conf:
+            self.use_brick_flag = conf['use_brick_flag']
+        else:
+            self.use_brick_flag = False  # Temporarily disable it
+        """
+        self.use_brick_flag = False
+        self._init_data()
 
     def _init_data(self):
-        self.learning_srcids = []
         self.sentence_dict = {}
         self.label_dict = {}
-
         for building, source_sample_num in zip(self.source_buildings,
                                                self.source_sample_num_list):
             self.sentence_dict.update(self.building_sentence_dict[building])
             one_label_dict = self.building_label_dict[building]
             self.label_dict.update(one_label_dict)
 
-            sample_srcid_list = select_random_samples(building,
-                                                      one_label_dict.keys(),
-                                                      source_sample_num,
-                                                      self.use_cluster_flag)
-            self.learning_srcids += sample_srcid_list
+            if not self.learning_srcids:
+                sample_srcid_list = select_random_samples(
+                                        building,
+                                        one_label_dict.keys(),
+                                        source_sample_num,
+                                        self.use_cluster_flag)
+                self.learning_srcids += sample_srcid_list
 
         # Construct Brick examples
         brick_sentence_dict = dict()
         brick_label_dict = dict()
         if self.use_brick_flag:
-            with open('metadata/brick_tags_labels.json', 'r') as fp:
+            with open(curr_dir / 'metadata/brick_tags_labels.json', 'r') as fp:
                 tag_label_list = json.load(fp)
             for tag_labels in tag_label_list:
                 # Append meaningless characters before and after the tag

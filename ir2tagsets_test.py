@@ -1,25 +1,15 @@
 import arrow
-from mongoengine import *
 import pdb
 
 from ir2tagsets2 import Ir2Tagsets
+from data_model import *
 
 t0 = arrow.get()
 
 connect('oracle')
 
 
-class RawMetadata(Document):
-    srcid = StringField(required=True)
-    building = StringField(required=True)
-    metadata = DictField()
 
-class LabeledMetadata(Document):
-    srcid = StringField(required=True)
-    building = StringField(required=True)
-    fullparsing = DictField()
-    tagsets = ListField(StringField())
-    point_tagset = StringField()
 column_names = ['VendorGivenName', 
                  'BACnetName', 
                  'BACnetDescription']
@@ -68,26 +58,21 @@ for building in source_buildings:
 target_srcids = list(building_label_dict[target_building].keys())
 t1 = arrow.get()
 print(t1-t0)
-ir2tagsets = Ir2Tagsets(target_building, 
-                  target_srcids,
-                  building_label_dict,
-                  building_sentence_dict,
-                  source_buildings,
-                  source_sample_num_list
-                  )
-t2 = arrow.get()
-print(t2-t1)
+ir2tagsets = Ir2Tagsets(target_building,
+                        target_srcids,
+                        building_label_dict,
+                        building_sentence_dict,
+                        building_tagsets_dict,
+                        source_buildings,
+                        source_sample_num_list
+                        )
 
-char2ir.update_model([])
-t3 = arrow.get()
-print(t3-t2)
-    
-new_srcids = char2ir.select_informative_samples(10)
-t4 = arrow.get()
-print(t4-t3)
-
-
-pred = char2ir.predict(target_srcids)
-proba = char2ir.predict_proba(target_srcids)
-t5 = arrow.get()
-print(t5-t4)
+ir2tagsets.update_model([])
+for i in range(0, 20):
+    t2 = arrow.get()
+    new_srcids = ir2tagsets.select_informative_samples(10)
+    ir2tagsets.update_model(new_srcids)
+    pred = ir2tagsets.predict(target_srcids + ir2tagsets.learning_srcids)
+    proba = ir2tagsets.predict_proba(target_srcids)
+    t3 = arrow.get()
+    print('{0}th took {1}'.format(i, t3 - t2))
