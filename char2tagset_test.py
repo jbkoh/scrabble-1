@@ -1,7 +1,7 @@
 import arrow
 import pdb
 
-from scrabble2 import Scrabble
+from scrabble import Scrabble
 from data_model import *
 
 t0 = arrow.get()
