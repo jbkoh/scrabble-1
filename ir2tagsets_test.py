@@ -1,7 +1,7 @@
 import arrow
 import pdb
 
-from ir2tagsets2 import Ir2Tagsets
+from ir2tagsets import Ir2Tagsets
 from data_model import *
 
 t0 = arrow.get()

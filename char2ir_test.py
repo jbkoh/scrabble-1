@@ -1,7 +1,7 @@
 import arrow
 import pdb
 
-from char2ir2 import Char2Ir
+from char2ir import Char2Ir
 from data_model import *
 
 t0 = arrow.get()
