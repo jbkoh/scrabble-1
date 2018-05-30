@@ -1,4 +1,8 @@
 import pdb
+from collections import defaultdict
+
+def print_sentence(srcid):
+    self.sentence_dict[srcid]
 from collections import OrderedDict
 import json
 import random
@@ -29,7 +33,7 @@ class BaseScrabble(object):
         self.target_building = target_building
         if self.target_building not in self.source_buildings:
             self.source_buildings.append(self.target_building)
-            self.source_sample_num_list += 0
+            self.source_sample_num_list.append(0)
         self.source_sample_num_list = source_sample_num_list
         self.building_tagsets_dict = building_tagsets_dict
         self.use_brick_flag = False  # Temporarily disable it
@@ -38,6 +42,7 @@ class BaseScrabble(object):
         self.target_srcids = target_srcids
         self.learning_srcids = learning_srcids
         self.conf = conf
+        self.history = []
 
     def sub_dict_by_key_set(self, d, ks):
         return dict((k,v) for k, v in d.items() if k in ks)
@@ -282,3 +287,26 @@ class BaseScrabble(object):
         with open(filename, 'r') as fp:
             data = json.load(fp)
         return data
+
+    def print_sentence(self, srcid):
+        print(''.join(self.sentence_dict[srcid]))
+
+    def print_pred(self, preds, srcids):
+        for srcid in srcids:
+            sentence = self.sentence_dict[srcid]
+            char_labels = self.label_dict[srcid]
+            for char_label, char_pred, char \
+                    in zip(char_labels, preds[srcid], sentence):
+                is_correct = char_label == char_pred
+                print('{0}: {1}\t{2}\t{3}'.format('O' if is_correct else 'X',
+                                                  char_pred, char_label, char))
+
+    def get_learning_sample_nums(self):
+        num_samples = defaultdict(int)
+        for srcid in self.learning_srcids:
+            for building, sentences in self.building_sentence_dict.items():
+                if srcid in sentences:
+                    num_samples[building] += 1
+                    break
+        assert sum(num_samples.values()) == len(set(self.learning_srcids))
+        return num_samples

@@ -1,4 +1,3 @@
-import os
 from uuid import uuid4
 from operator import itemgetter
 from itertools import chain
@@ -32,6 +31,7 @@ from brick_parser import pointTagsetList        as  point_tagsets,\
                          equipSubclassDict      as  equip_subclass_dict,\
                          locationSubclassDict   as  location_subclass_dict,\
                          tagsetTree             as  tagset_tree
+
 
 def gen_uuid():
     return str(uuid4())
@@ -130,7 +130,8 @@ class Ir2Tagsets(BaseScrabble):
         if 'n_jobs' in conf:
             self.n_jobs = conf['n_jobs']
         else:
-            self.n_jobs = 6
+            self.n_jobs = 1
+            #self.n_jobs = 6
         if 'ts_flag' in conf:
             self.ts_flag = conf['ts_flag']
         else:
@@ -171,7 +172,6 @@ class Ir2Tagsets(BaseScrabble):
         self.subclass_dict['unknown'] = list()
         self.subclass_dict['none'] = list()
         self.tagset_tree = deepcopy(tagset_tree)
-        
 
     def _init_data(self):
         self.sentence_dict = {}
@@ -226,6 +226,7 @@ class Ir2Tagsets(BaseScrabble):
         self._build_tagset_classifier(self.learning_srcids,
                                       self.target_srcids,
                                       validation_srcids=[])
+
     def _determine_used_phrases(self, phrases, tagsets):
         phrases_usages = list()
         pred_tags = reduce(adder, [tagset.split('_') for tagset in tagsets], [])
@@ -366,7 +367,7 @@ class Ir2Tagsets(BaseScrabble):
             target_srcids =self.target_srcids
         pred, _ =self._predict_and_proba(target_srcids)
         return pred
-    
+
     def predict_proba(self, target_srcids=None):
         if not target_srcids:
             target_srcids =self.target_srcids
@@ -505,7 +506,6 @@ class Ir2Tagsets(BaseScrabble):
         self.tagsets_dict.update(negative_truths_dict)
         return doc, srcids
 
-            
     def _augment_brick_samples(self, doc, srcids):
         brick_truths_dict = dict()
         self.brick_srcids = []
@@ -602,9 +602,8 @@ class Ir2Tagsets(BaseScrabble):
                                                new_brick_vect_doc])
                 brick_srcids = new_brick_srcids
                 learning_srcids += brick_srcids
-        
-    
-    def _build_tagset_classifier(self, 
+
+    def _build_tagset_classifier(self,
                                  learning_srcids,
                                  target_srcids,
                                  validation_srcids):
@@ -668,7 +667,7 @@ class Ir2Tagsets(BaseScrabble):
         ## Init Brick samples.
         if self.use_brick_flag:
             learning_doc, learning_srcids  = \
-                self._augment_brick_samples(learning_doc, 
+                self._augment_brick_samples(learning_doc,
                                             learning_srcids)
 
         self.tagset_vectorizer.fit(learning_doc + test_doc)# + brick_doc)
@@ -749,6 +748,49 @@ class Ir2Tagsets(BaseScrabble):
                 return tagset_classifier
             meta_classifier = meta_cc
             params_list_dict = {}
+
+        elif self.tagset_classifier_type == 'StructuredCC_autoencoder':
+            def meta_scc(**kwargs):
+                feature_selector = SelectFromModel(LinearSVC(C=1))
+                #feature_selector = SelectFromModel(LinearSVC(C=0.01, penalty='l1', dual=False))
+                base_base_classifier = GradientBoostingClassifier(**kwargs)
+                #base_base_classifier = SGDClassifier(loss='modified_huber', penalty='elasticnet')
+                #base_base_classifier = PassiveAggressiveClassifier(loss='squared_hinge', C=0.1)
+                #base_base_classifier = LogisticRegression()
+                #base_base_classifier = RandomForestClassifier(**kwargs)
+                base_classifier = Pipeline([('feature_selection',
+                                             feature_selector),
+                                            ('classification',
+                                             base_base_classifier)
+                                           ])
+                tagset_classifier = StructuredClassifierChain(
+                                    base_classifier,
+                                    self.tagset_binarizer,
+                                    self.subclass_dict,
+                                    self.tagset_vectorizer.vocabulary,
+                                    self.n_jobs,
+                                    self.use_brick_flag,
+                                    self.tagset_vectorizer)
+                return tagset_classifier
+            meta_classifier = meta_scc
+            rf_params_list_dict = {
+                'n_estimators': [10, 50, 100],
+                'criterion': ['gini', 'entropy'],
+                'max_features': [None, 'auto'],
+                'max_depth': [1, 5, 10, 50],
+                'min_samples_leaf': [2,4,8],
+                'min_samples_split': [2,4,8]
+            }
+            gb_params_list_dict = {
+                'loss': ['deviance', 'exponential'],
+                'learning_rate': [0.1, 0.01, 1, 2],
+                'criterion': ['friedman_mse', 'mse'],
+                'max_features': [None, 'sqrt'],
+                'max_depth': [1, 3, 5, 10],
+                'min_samples_leaf': [1,2,4,8],
+                'min_samples_split': [2,4,8]
+            }
+            params_list_dict = gb_params_list_dict
 
         elif self.tagset_classifier_type == 'StructuredCC':
             def meta_scc(**kwargs):

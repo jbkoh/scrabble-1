@@ -4,7 +4,6 @@ import datetime
 import time
 from joblib import Parallel, delayed
 import multiprocessing
-import changefinder
 import matplotlib.pyplot as plt
 from feature_extractor import *
 from sklearn.metrics import classification_report

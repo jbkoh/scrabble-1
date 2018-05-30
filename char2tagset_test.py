@@ -1,8 +1,10 @@
 import arrow
 import pdb
+import json
 
 from scrabble import Scrabble
 from data_model import *
+import random
 
 t0 = arrow.get()
 
@@ -15,8 +17,11 @@ column_names = ['VendorGivenName',
                  'BACnetDescription']
 
 target_building = 'ebu3b'
-source_buildings = ['ap_m', 'ebu3b']
-source_sample_num_list = [5, 0]
+source_buildings = ['ebu3b']
+source_sample_num_list = [10]
+#source_buildings = ['ap_m', 'ebu3b']
+#source_sample_num_list = [200, 10]
+#source_sample_num_list = [5, 0]
 
 building_sentence_dict = dict()
 building_label_dict = dict()
@@ -55,7 +60,7 @@ for building in source_buildings:
             sentence_dict[srcid]  = sentence
     building_sentence_dict[building] = sentence_dict
 
-target_srcids = list(building_label_dict[target_building].keys())
+target_srcids = random.sample(list(building_label_dict[target_building].keys()), 1000)
 t1 = arrow.get()
 print(t1-t0)
 scrabble = Scrabble(target_building,
@@ -72,7 +77,15 @@ for i in range(0, 20):
     t2 = arrow.get()
     new_srcids = scrabble.select_informative_samples(10)
     scrabble.update_model(new_srcids)
-    pred = scrabble.predict(target_srcids + scrabble.learning_srcids)
-    proba = scrabble.predict_proba(target_srcids)
+    #pred = scrabble.predict(target_srcids + scrabble.learning_srcids)
+    #proba = scrabble.predict_proba(target_srcids)
+    #pred_tags = scrabble.predict_tags(target_srcids)
     t3 = arrow.get()
     print('{0}th took {1}'.format(i, t3 - t2))
+
+pred = scrabble.predict(target_srcids)
+with open('result/scrabble_test.json', 'w') as fp:
+    json.dump(pred, fp, indent=2)
+pred_tags = scrabble.predict_tags(target_srcids)
+with open('result/scrabble_tags_test.json', 'w') as fp:
+    json.dump(pred_tags, fp, indent=2)

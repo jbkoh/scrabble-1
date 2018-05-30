@@ -1,7 +1,12 @@
+import pdb
 from copy import deepcopy
 from sklearn.metrics import f1_score
+from sklearn.preprocessing import LabelBinarizer, MultiLabelBinarizer
+from functools import reduce
 
 import numpy as np
+
+adder = lambda x,y: x+y
 
 def get_score(pred_dict, true_dict, srcids, score_func, labels):
     score = 0
@@ -106,6 +111,30 @@ def get_macro_f1(true_mat, pred_mat):
         f1s.append(f1)
     return np.mean(f1s)
 
+def get_accuracy_raw(true_labels, pred_labels):
+    assert len(true_labels) == len(pred_labels)
+    score = 0.0
+    srcids = true_labels.keys()
+    for srcid in srcids:
+        trues = set(true_labels[srcid])
+        preds = set(pred_labels[srcid])
+        score += len(trues.intersection(preds)) \
+            / len(trues.union(preds))
+    return score / len(true_labels)
+
+def binarize_labels(pred_labels, true_labels):
+    srcids = list(pred_labels.keys())
+    tot_labels = [list(labels) for labels in
+                  list(pred_labels.values()) + list(true_labels.values())]
+    mlb = MultiLabelBinarizer().fit(tot_labels)
+    pred_mat = mlb.transform(pred_labels.values())
+    true_mat = mlb.transform(true_labels.values())
+    return pred_mat, true_mat
+
+def get_macro_f1_raw(true_labels, pred_labels):
+    assert len(true_labels) == len(pred_labels)
+    pred_mat, true_mat = binarize_labels(pred_labels, true_labels)
+    return get_macro_f1(true_mat, pred_mat)
 
 def get_accuracy(true_mat, pred_mat):
     acc_list = list()
@@ -116,3 +145,15 @@ def get_accuracy(true_mat, pred_mat):
                 len(pred_pos_indices.union(true_pos_indices))
         acc_list.append(acc)
     return np.mean(acc_list)
+
+
+def sequential_accuracy(true_tags_list, pred_tags_list):
+    accs = []
+    for true_tags, pred_tags in zip(true_tags_list, pred_tags_list):
+        assert len(true_tags) == len(pred_tags)
+        correct_cnt = sum([1 if true_tag == pred_tag else 0
+                           for true_tag, pred_tag
+                           in zip(true_tags, pred_tags)])
+        accs.append(correct_cnt / len(true_tags))
+    return np.mean(accs)
+

@@ -259,3 +259,4 @@ def get_label_dict(building):
     with open(filename, 'r') as fp:
         data = json.load(fp)
     return data
+

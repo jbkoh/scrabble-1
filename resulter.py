@@ -30,6 +30,12 @@ class Resulter():
                             len(true_tagsets.union(pred_tagsets)))
         return np.mean(acc_list)
 
+    def add_results(self, srcids, sentences, pred_token_labels, orig_token_labels):
+        for srcid in srcids:
+            self.add_one_result(sentences[srcid],
+                                pred_token_labels[srcid],
+                                orig_token_labels[srcid])
+
     def add_one_result(self, srcid, sentence, \
                              pred_token_labels, orig_token_labels):
         # Check the size of data

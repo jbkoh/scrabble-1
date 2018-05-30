@@ -10,8 +10,8 @@ connect('oracle')
 
 
 
-column_names = ['VendorGivenName', 
-                 'BACnetName', 
+column_names = ['VendorGivenName',
+                 'BACnetName',
                  'BACnetDescription']
 
 target_building = 'ebu3b'
@@ -34,7 +34,7 @@ for building in source_buildings:
                 fullparsing = one_fullparsing
             else:
                 fullparsing += ['O'] + one_fullparsing
-                #  This format is alinged with the sentence 
+                #  This format is alinged with the sentence
                 #  configormation rule.
         label_dict[srcid] = fullparsing
 
@@ -74,5 +74,6 @@ for i in range(0, 20):
     ir2tagsets.update_model(new_srcids)
     pred = ir2tagsets.predict(target_srcids + ir2tagsets.learning_srcids)
     proba = ir2tagsets.predict_proba(target_srcids)
+    ir2tagsets.evaluate(pred)
     t3 = arrow.get()
     print('{0}th took {1}'.format(i, t3 - t2))

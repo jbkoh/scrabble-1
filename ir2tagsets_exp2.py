@@ -3,6 +3,8 @@ import pdb
 
 from ir2tagsets_seq import Ir2Tagsets
 from data_model import *
+from exper import Exper
+from eval_func import *
 
 t0 = arrow.get()
 
@@ -10,13 +12,13 @@ connect('oracle')
 
 
 
-column_names = ['VendorGivenName', 
-                 'BACnetName', 
+column_names = ['VendorGivenName',
+                 'BACnetName',
                  'BACnetDescription']
 
 target_building = 'ebu3b'
 source_buildings = ['ap_m', 'ebu3b']
-source_sample_num_list = [5, 0]
+source_sample_num_list = [200, 0]
 
 building_sentence_dict = dict()
 building_label_dict = dict()
@@ -34,7 +36,7 @@ for building in source_buildings:
                 fullparsing = one_fullparsing
             else:
                 fullparsing += ['O'] + one_fullparsing
-                #  This format is alinged with the sentence 
+                #  This format is alinged with the sentence
                 #  configormation rule.
         label_dict[srcid] = fullparsing
 
@@ -58,21 +60,32 @@ for building in source_buildings:
 target_srcids = list(building_label_dict[target_building].keys())
 t1 = arrow.get()
 print(t1-t0)
+inference_configs = {
+    'n_jobs': 25,
+    'negative_flag': True,
+    'tagset_classifier_type': 'StructuredCC',
+    'n_estimators': 20,
+    'vectorizer_type': 'tfidf',
+    'autoencode': False
+}
+
 ir2tagsets = Ir2Tagsets(target_building,
                         target_srcids,
                         building_label_dict,
                         building_sentence_dict,
                         building_tagsets_dict,
                         source_buildings,
-                        source_sample_num_list
+                        source_sample_num_list,
+                        conf=inference_configs
                         )
+configs = {
+    'step_num': 10,
+    'iter_num': 25,
+}
+eval_functions = {
+    'accuracy': get_accuracy_raw,
+    'macro_f1': get_macro_f1_raw
+}
+exp = Exper(ir2tagsets, eval_functions, configs)
+exp.run_exp()
 
-ir2tagsets.update_model([])
-for i in range(0, 20):
-    t2 = arrow.get()
-    new_srcids = ir2tagsets.select_informative_samples(10)
-    ir2tagsets.update_model(new_srcids)
-    pred = ir2tagsets.predict(target_srcids + ir2tagsets.learning_srcids)
-    proba = ir2tagsets.predict_proba(target_srcids)
-    t3 = arrow.get()
-    print('{0}th took {1}'.format(i, t3 - t2))

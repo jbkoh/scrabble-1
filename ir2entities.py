@@ -8,14 +8,11 @@ from bson.binary import Binary as BsonBinary
 import arrow
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import LabelBinarizer, MultiLabelBinarizer
-from sklearn.metrics import precision_recall_fscore_support, f1_score
 
 from mongo_models import store_model, get_model, get_tags_mapping, \
     get_crf_results, store_result, get_entity_results
 from base_scrabble import BaseScrabble
 from common import *
-import eval_func
 
 curr_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
@@ -23,7 +20,7 @@ def gen_uuid():
     return str(uuid4())
 
 
-class Char2Ir(BaseScrabble):
+class Ir2Entities(BaseScrabble):
     def __init__(self,
                  target_building,
                  target_srcids,
@@ -113,8 +110,7 @@ class Char2Ir(BaseScrabble):
         algo = 'ap'
         trainer = pycrfsuite.Trainer(verbose=False, algorithm=algo)
         if algo == 'ap':
-            trainer.set('max_iterations', 125)
-            #trainer.set('max_iterations', 200)
+            trainer.set('max_iterations', 200)
 
             # algorithm: {'lbfgs', 'l2sgd', 'ap', 'pa', 'arow'}
         trainer.set_params({'feature.possible_states': True,
@@ -297,23 +293,3 @@ class Char2Ir(BaseScrabble):
 
     def learn_auto(self, iter_num=1):
         pass
-
-    def evaluate(self, preds):
-        acc = eval_func.sequential_accuracy(
-            [self.label_dict[srcid] for srcid in preds.keys()],
-            [preds[srcid] for srcid in preds.keys()])
-        pred = [preds[srcid] for srcid in preds.keys()]
-        true = [self.label_dict[srcid] for srcid in preds.keys()]
-        mlb = MultiLabelBinarizer()
-        mlb.fit(pred + true)
-        encoded_true = mlb.transform(true)
-        encoded_pred = mlb.transform(pred)
-        macro_f1 = f1_score(encoded_true, encoded_pred, average='macro')
-        f1 = f1_score(encoded_true, encoded_pred, average='weighted')
-        res = {
-            'accuracy': acc,
-            'f1': f1,
-            'macro_f1': macro_f1
-        }
-        return res
-

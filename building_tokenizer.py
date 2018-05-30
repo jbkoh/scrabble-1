@@ -184,7 +184,7 @@ def parse_sentences(building_name):
     jciname_list = list()
     source_id_set = set([])
     source_id_list = list()
-    
+
     for nae in naeList:
         device = sensor_dict[nae]
         h_dev = device['props']
@@ -220,8 +220,8 @@ def parse_sentences(building_name):
                     assert(False)
             else:
                 unit_str = ''
+
             unit_list.append([unit_str])
-                    
             if not sensor['props']['type_str']==None:
                 typeStr = bacnettypeMap.loc[sensor['props']['type_str']].tolist()[0]
                 if type(typeStr)!=str:

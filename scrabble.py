@@ -1,10 +1,20 @@
 import pdb
 from copy import deepcopy
 
-from ir2tagsets2 import Ir2Tagsets
-from char2ir2 import Char2Ir
+from ir2tagsets import Ir2Tagsets
+#from ir2tagsets2 import Ir2Tagsets
+#from char2ir_gpu import Char2Ir
+from char2ir import Char2Ir
 from base_scrabble import BaseScrabble
 from common import *
+
+gpu_flag = False
+if gpu_flag:
+    from char2ir_gpu import Char2Ir
+else:
+    from char2ir import Char2Ir
+
+
 
 
 class Scrabble(BaseScrabble):
@@ -102,6 +112,13 @@ class Scrabble(BaseScrabble):
         #self.ir2tagsets.update_phrases(phrases_pred)
         self.ir2tagsets.update_model(srcids)
 
+
+    def predict_tags(self, target_srcids=None):
+        if not target_srcids:
+            target_srcids = self.target_srcids
+        pred_bios = self.char2ir.predict(target_srcids)
+        return pred_bios
+
     def predict(self, target_srcids=None):
         if not target_srcids:
             target_srcids = self.target_srcids
@@ -130,5 +147,34 @@ class Scrabble(BaseScrabble):
         char2ir_srcids = self.char2ir.select_informative_samples(char2ir_num)
         ir2tagsets_srcids = self.ir2tagsets.select_informative_samples(
                                 ir2tagsets_num)
-        return list(set(char2ir_srcids + ir2tagsets_srcids))
+        new_srcids = set(char2ir_srcids + ir2tagsets_srcids)
+        redundant_srcids = [srcid for srcid in new_srcids
+                            if srcid in self.learning_srcids]
+        if redundant_srcids:
+            print('WARNING: redundant srcids from select_samples(): {0}'
+                  .format(redundant_srcids))
+        return new_srcids
+
+    def evaluate(self, target_srcids=None):
+        if not target_srcids:
+            target_srcids = self.target_srcids
+        pred = self.predict(target_srcids)
+        pred_tags = self.predict_tags(target_srcids)
+        hist = {
+            'pred_tagsets': pred,
+            'pred_tags': pred_tags,
+            'learning_srcids': deepcopy(self.learning_srcids)
+        }
+        self.history.append(hist)
+
+
+
+
+
+
+
+
+
+
+
 
