@@ -26,7 +26,7 @@ class Scrabble(BaseScrabble):
                  building_tagsets_dict,
                  source_buildings,
                  source_sample_num_list,
-                 conf={},
+                 config={},
                  learning_srcids=[]
                  ):
         super(Scrabble, self).__init__(
@@ -38,10 +38,10 @@ class Scrabble(BaseScrabble):
                  source_buildings,
                  source_sample_num_list,
                  deepcopy(learning_srcids),
-                 conf)
+                 config)
         self.target_srcids = target_srcids
-        if 'use_cluster_flag' in conf:
-            self.use_cluster_flag = conf['use_cluster_flag']
+        if 'use_cluster_flag' in config:
+            self.use_cluster_flag = config['use_cluster_flag']
         else:
             self.use_cluster_flag = True
 
@@ -53,7 +53,7 @@ class Scrabble(BaseScrabble):
                                source_buildings,
                                source_sample_num_list,
                                deepcopy(self.learning_srcids),
-                               conf
+                               config
                                )
         self.ir2tagsets = Ir2Tagsets(target_building,
                                      target_srcids,
@@ -63,7 +63,7 @@ class Scrabble(BaseScrabble):
                                      source_buildings,
                                      source_sample_num_list,
                                      deepcopy(self.learning_srcids),
-                                     conf
+                                     config
                                      )
 
     def init_data(self):

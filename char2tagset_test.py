@@ -1,6 +1,7 @@
 import arrow
 import pdb
 import json
+from copy import deepcopy
 
 from scrabble import Scrabble
 from data_model import *
@@ -89,13 +90,17 @@ for building in source_buildings:
 target_srcids = random.sample(list(building_label_dict[target_building].keys()), 1000)
 t1 = arrow.get()
 print(t1-t0)
+config = {
+    'use_known_tags': True
+}
 scrabble = Scrabble(target_building,
                     target_srcids,
                     building_label_dict,
                     building_sentence_dict,
                     building_tagsets_dict,
                     source_buildings,
-                    source_sample_num_list
+                    source_sample_num_list,
+                    config=config
                     )
 
 scrabble.update_model([])
@@ -110,15 +115,15 @@ for i in range(0, 20):
                                      pred,
                                      target_srcids, scrabble.learning_srcids)
     print_status(scrabble, tot_acc, learning_acc)
-    slack_notifier('an iteration done')
     hist = {
         'pred': pred,
         'pred_tags': pred_tags,
-        'learning_srcids': scrabble.learning_srcids}
+        'learning_srcids': list(set(deepcopy(scrabble.learning_srcids)))
+    }
     history.append(hist)
 
     t3 = arrow.get()
     print('{0}th took {1}'.format(i, t3 - t2))
 
-    with open('result/scrabble_history_{0}.json'.format(target_building), 'w') as fp:
+    with open('result/scrabble_history_debug_{0}.json'.format(target_building), 'w') as fp:
         json.dump(history, fp)

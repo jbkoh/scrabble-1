@@ -102,7 +102,7 @@ class Ir2Tagsets(BaseScrabble):
                  source_sample_num_list=[],
                  learning_srcids=[],
                  known_tags_dict={},
-                 conf={}):
+                 config={}):
         super(Ir2Tagsets, self).__init__(
                  target_building,
                  target_srcids,
@@ -112,54 +112,54 @@ class Ir2Tagsets(BaseScrabble):
                  source_buildings,
                  source_sample_num_list,
                  learning_srcids,
-                 conf)
+                 config)
         self.ts2ir = None
         self.ts_feature_filename = 'TS_Features/features.pkl'
 
         self.known_tags_dict = known_tags_dict
-        if 'use_cluster_flag' in conf:
-            self.use_cluster_flag = conf['use_cluster_flag']
+        if 'use_cluster_flag' in config:
+            self.use_cluster_flag = config['use_cluster_flag']
         else:
             self.use_cluster_flag = True
-        if 'eda_flag' in conf:
-            self.eda_flag = conf['eda_flag'], 
+        if 'eda_flag' in config:
+            self.eda_flag = config['eda_flag'],
         else:
             self.eda_flag = False
-        if 'use_brick_flag' in conf:
-            self.use_brick_flag = conf['use_brick_flag']
+        if 'use_brick_flag' in config:
+            self.use_brick_flag = config['use_brick_flag']
         else:
             self.use_brick_flag = True
-        if 'n_jobs' in conf:
-            self.n_jobs = conf['n_jobs']
+        if 'n_jobs' in config:
+            self.n_jobs = config['n_jobs']
         else:
             #self.n_jobs = 1
             self.n_jobs = 6
-        if 'ts_flag' in conf:
-            self.ts_flag = conf['ts_flag']
+        if 'ts_flag' in config:
+            self.ts_flag = config['ts_flag']
         else:
             self.ts_flag = False
-        if 'negative_flag' in conf:
-            self.negative_flag = conf['negative_flag']
+        if 'negative_flag' in config:
+            self.negative_flag = config['negative_flag']
         else:
             self.negative_flag = True
-        if 'tagset_classifier_type' in conf:
-            self.tagset_classifier_type = conf['tagset_classifier_type']
-        else: 
+        if 'tagset_classifier_type' in config:
+            self.tagset_classifier_type = config['tagset_classifier_type']
+        else:
             self.tagset_classifier_type = 'StructuredCC'
-        if 'n_estimators' in conf:
-            self.n_estimators = conf['n_estimators']
+        if 'n_estimators' in config:
+            self.n_estimators = config['n_estimators']
         else:
             self.n_estimators = 10 # TODO: Find the proper value
-        if 'vectorizer_type' in conf:
-            self.vectorizer_type = conf['vectorizer_type']
+        if 'vectorizer_type' in config:
+            self.vectorizer_type = config['vectorizer_type']
         else:
             self.vectorizer_type = 'tfidf'
-        if 'query_strategy' in conf:
-            self.query_strategy = conf['query_strategy']
+        if 'query_strategy' in config:
+            self.query_strategy = config['query_strategy']
         else:
             self.query_strategy = 'phrase_util'
-        if 'use_known_tags' in conf:
-            self.use_known_tags = conf['use_known_tags']
+        if 'use_known_tags' in config:
+            self.use_known_tags = config['use_known_tags']
         else:
             self.use_known_tags = False
 
