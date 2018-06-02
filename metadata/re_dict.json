@@ -24,7 +24,8 @@
       ["occ.s", "status"],
       ["\\d+s", "leftidentifier"],
       ["chws", "supply"],
-      ["mtws", "supply"]
+      ["mtws", "supply"],
+      ["ef\\d-s", "status"]
     ],
     "main":[
       ["main.fan", "rightidentifier"]
@@ -36,7 +37,7 @@
       ["m.energy", "none"]
     ],
     "t": [
-      ["zn.t", ".temperature"], 
+      ["zn.t", "temperature"], 
       ["t\\d", "networkadapter-t"], 
       ["t.occ", "temporary"],
       ["chwr\\d t", "temperature"],
@@ -52,6 +53,7 @@
       ["sa.t", "temperature"],
       ["r-t", "temperature"],
       ["r t", "temperature"],
+      ["ra.t", "temperature"],
       ["chws.t", "temperature"],
       ["dhws.t", "temperature"],
       ["\\d.t", "temperature"]
@@ -66,7 +68,8 @@
       ["ocm", "occupied"],
       ["ohm", "occupied"],
       ["oclg", "occupied"],
-      ["pid.o", "none"]
+      ["pid.o", "none"],
+      ["an.o", "none"]
     ],
     "flt": [
       ["flt-rst", "fault"],
@@ -94,12 +97,15 @@
     ],
     "occ": [
       ["occ.cmd", "occupied"], 
+      ["occ-cmd", "occupied"],
+      ["occ cmd", "occupied"],
       ["occhtg", "occupied"], 
       ["occ.sen", "occupancy"], 
       ["occsen", "occupancy"], 
       ["t.occ", "occupancy"],
       ["temp.occ", "occupancy"],
       ["occ.sts", "occupancy"],
+      ["occ sts", "occupancy"],
       ["occ.s ", "occupancy"]
     ],
     "actual": [
@@ -110,8 +116,9 @@
     "sp": [
       ["flow sp", "setpoint"], 
       ["dp.sp", "setpoint"], 
+      ["da.sp", "setpoint"],
       ["econ.sp", "setpoint"], 
-      ["supflo.sp", "setpoint"], 
+      ["flo.sp", "setpoint"], 
       ["hx\\d.sp", "setpoint"],
       ["ocmnc.sp", "setpoint"],
       ["aclg.sp", "setpoint"],
@@ -132,12 +139,17 @@
       ["diff.sp", "speed"]
     ],
     "temp": [
+      ["temp tol", "temperature"],
+      ["tempalm", "temperature"],
+      ["temp.tol", "temperature"],
+      ["hitemp", "temperature"],
       [".temp\n", "temperature"],
       ["temp.setpoint", "temperature"], 
       ["lo.temp", "temperature"], 
       ["low.temp", "temperature"], 
       ["ret.temp", "temperature"],
       ["temp.occ", "temporary"],
+      ["temp occ", "temporary"],
       ["air.temp", "temperature"],
       ["hitemp", "temperature"]
     ],
@@ -218,6 +230,8 @@
       ["sa.t", "temperature"],
       ["sat", "temperature"],
       ["ra.t", "temperature"],
+      ["r-t", "temperature"],
+      ["r t", "temperature"],
       ["ma.t", "temperature"],
       ["uflr.t", "temperature"],
       ["hthwr.t", "temperature"],

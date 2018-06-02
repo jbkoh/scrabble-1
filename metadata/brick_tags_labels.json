@@ -46,7 +46,7 @@
     ],
     [
       "c",
-      "L_photovoltaic"
+      "I_photovoltaic"
     ]
   ],
   [
@@ -72,7 +72,7 @@
     ],
     [
       "y",
-      "L_yearly"
+      "I_yearly"
     ]
   ],
   [
@@ -94,7 +94,7 @@
     ],
     [
       "t",
-      "L_short"
+      "I_short"
     ]
   ],
   [
@@ -112,7 +112,7 @@
     ],
     [
       "h",
-      "L_push"
+      "I_push"
     ]
   ],
   [
@@ -150,7 +150,7 @@
     ],
     [
       "e",
-      "L_discharge"
+      "I_discharge"
     ]
   ],
   [
@@ -180,7 +180,7 @@
     ],
     [
       "g",
-      "L_leaving"
+      "I_leaving"
     ]
   ],
   [
@@ -214,7 +214,7 @@
     ],
     [
       "r",
-      "L_inverter"
+      "I_inverter"
     ]
   ],
   [
@@ -236,7 +236,7 @@
     ],
     [
       "e",
-      "L_trace"
+      "I_trace"
     ]
   ],
   [
@@ -258,7 +258,7 @@
     ],
     [
       "e",
-      "L_close"
+      "I_close"
     ]
   ],
   [
@@ -292,7 +292,7 @@
     ],
     [
       "l",
-      "L_terminal"
+      "I_terminal"
     ]
   ],
   [
@@ -314,7 +314,7 @@
     ],
     [
       "d",
-      "L_mixed"
+      "I_mixed"
     ]
   ],
   [
@@ -336,7 +336,7 @@
     ],
     [
       "e",
-      "L_angle"
+      "I_angle"
     ]
   ],
   [
@@ -382,7 +382,7 @@
     ],
     [
       "n",
-      "L_integration"
+      "I_integration"
     ]
   ],
   [
@@ -404,7 +404,7 @@
     ],
     [
       "r",
-      "L_water"
+      "I_water"
     ]
   ],
   [
@@ -426,7 +426,7 @@
     ],
     [
       "r",
-      "L_power"
+      "I_power"
     ]
   ],
   [
@@ -464,7 +464,7 @@
     ],
     [
       "n",
-      "L_direction"
+      "I_direction"
     ]
   ],
   [
@@ -494,7 +494,7 @@
     ],
     [
       "r",
-      "L_booster"
+      "I_booster"
     ]
   ],
   [
@@ -508,7 +508,7 @@
     ],
     [
       "2",
-      "L_co2"
+      "I_co2"
     ]
   ],
   [
@@ -546,7 +546,7 @@
     ],
     [
       "n",
-      "L_supplyfan"
+      "I_supplyfan"
     ]
   ],
   [
@@ -572,7 +572,7 @@
     ],
     [
       "y",
-      "L_safety"
+      "I_safety"
     ]
   ],
   [
@@ -618,7 +618,7 @@
     ],
     [
       "t",
-      "L_curtailment"
+      "I_curtailment"
     ]
   ],
   [
@@ -636,7 +636,7 @@
     ],
     [
       "k",
-      "L_peak"
+      "I_peak"
     ]
   ],
   [
@@ -678,7 +678,7 @@
     ],
     [
       "l",
-      "L_electrical"
+      "I_electrical"
     ]
   ],
   [
@@ -712,7 +712,7 @@
     ],
     [
       "y",
-      "L_remotely"
+      "I_remotely"
     ]
   ],
   [
@@ -746,7 +746,7 @@
     ],
     [
       "e",
-      "L_response"
+      "I_response"
     ]
   ],
   [
@@ -764,7 +764,7 @@
     ],
     [
       "t",
-      "L_duct"
+      "I_duct"
     ]
   ],
   [
@@ -778,7 +778,7 @@
     ],
     [
       "d",
-      "L_vfd"
+      "I_vfd"
     ]
   ],
   [
@@ -808,7 +808,7 @@
     ],
     [
       "t",
-      "L_lockout"
+      "I_lockout"
     ]
   ],
   [
@@ -830,7 +830,7 @@
     ],
     [
       "y",
-      "L_delay"
+      "I_delay"
     ]
   ],
   [
@@ -848,7 +848,7 @@
     ],
     [
       "p",
-      "L_step"
+      "I_step"
     ]
   ],
   [
@@ -894,7 +894,7 @@
     ],
     [
       "e",
-      "L_maintenance"
+      "I_maintenance"
     ]
   ],
   [
@@ -912,7 +912,7 @@
     ],
     [
       "d",
-      "L_dead"
+      "I_dead"
     ]
   ],
   [
@@ -934,7 +934,7 @@
     ],
     [
       "t",
-      "L_limit"
+      "I_limit"
     ]
   ],
   [
@@ -956,7 +956,7 @@
     ],
     [
       "k",
-      "L_stack"
+      "I_stack"
     ]
   ],
   [
@@ -970,7 +970,7 @@
     ],
     [
       "w",
-      "L_dew"
+      "I_dew"
     ]
   ],
   [
@@ -1008,7 +1008,7 @@
     ],
     [
       "e",
-      "L_luminance"
+      "I_luminance"
     ]
   ],
   [
@@ -1054,7 +1054,7 @@
     ],
     [
       "e",
-      "L_temperature"
+      "I_temperature"
     ]
   ],
   [
@@ -1084,7 +1084,7 @@
     ],
     [
       "e",
-      "L_voltage"
+      "I_voltage"
     ]
   ],
   [
@@ -1110,7 +1110,7 @@
     ],
     [
       "r",
-      "L_damper"
+      "I_damper"
     ]
   ],
   [
@@ -1132,7 +1132,7 @@
     ],
     [
       "y",
-      "L_today"
+      "I_today"
     ]
   ],
   [
@@ -1150,7 +1150,7 @@
     ],
     [
       "h",
-      "L_sash"
+      "I_sash"
     ]
   ],
   [
@@ -1188,7 +1188,7 @@
     ],
     [
       "n",
-      "L_detection"
+      "I_detection"
     ]
   ],
   [
@@ -1202,7 +1202,7 @@
     ],
     [
       "e",
-      "L_pre"
+      "I_pre"
     ]
   ],
   [
@@ -1224,7 +1224,7 @@
     ],
     [
       "r",
-      "L_floor"
+      "I_floor"
     ]
   ],
   [
@@ -1266,7 +1266,7 @@
     ],
     [
       "r",
-      "L_humidifier"
+      "I_humidifier"
     ]
   ],
   [
@@ -1316,7 +1316,7 @@
     ],
     [
       "l",
-      "L_proportional"
+      "I_proportional"
     ]
   ],
   [
@@ -1334,7 +1334,7 @@
     ],
     [
       "n",
-      "L_gain"
+      "I_gain"
     ]
   ],
   [
@@ -1364,7 +1364,7 @@
     ],
     [
       "r",
-      "L_weather"
+      "I_weather"
     ]
   ],
   [
@@ -1382,7 +1382,7 @@
     ],
     [
       "p",
-      "L_pump"
+      "I_pump"
     ]
   ],
   [
@@ -1412,7 +1412,7 @@
     ],
     [
       "r",
-      "L_freezer"
+      "I_freezer"
     ]
   ],
   [
@@ -1438,7 +1438,7 @@
     ],
     [
       "e",
-      "L_torque"
+      "I_torque"
     ]
   ],
   [
@@ -1468,7 +1468,7 @@
     ],
     [
       "l",
-      "L_thermal"
+      "I_thermal"
     ]
   ],
   [
@@ -1486,7 +1486,7 @@
     ],
     [
       "k",
-      "L_leak"
+      "I_leak"
     ]
   ],
   [
@@ -1512,7 +1512,7 @@
     ],
     [
       "l",
-      "L_manual"
+      "I_manual"
     ]
   ],
   [
@@ -1530,7 +1530,7 @@
     ],
     [
       "o",
-      "L_auto"
+      "I_auto"
     ]
   ],
   [
@@ -1552,7 +1552,7 @@
     ],
     [
       "t",
-      "L_point"
+      "I_point"
     ]
   ],
   [
@@ -1582,7 +1582,7 @@
     ],
     [
       "t",
-      "L_highest"
+      "I_highest"
     ]
   ],
   [
@@ -1604,7 +1604,7 @@
     ],
     [
       "l",
-      "L_panel"
+      "I_panel"
     ]
   ],
   [
@@ -1622,7 +1622,7 @@
     ],
     [
       "y",
-      "L_city"
+      "I_city"
     ]
   ],
   [
@@ -1664,7 +1664,7 @@
     ],
     [
       "r",
-      "L_compressor"
+      "I_compressor"
     ]
   ],
   [
@@ -1678,7 +1678,7 @@
     ],
     [
       "x",
-      "L_box"
+      "I_box"
     ]
   ],
   [
@@ -1716,7 +1716,7 @@
     ],
     [
       "r",
-      "L_indicator"
+      "I_indicator"
     ]
   ],
   [
@@ -1738,7 +1738,7 @@
     ],
     [
       "d",
-      "L_fixed"
+      "I_fixed"
     ]
   ],
   [
@@ -1764,7 +1764,7 @@
     ],
     [
       "d",
-      "L_liquid"
+      "I_liquid"
     ]
   ],
   [
@@ -1790,7 +1790,7 @@
     ],
     [
       "h",
-      "L_zenith"
+      "I_zenith"
     ]
   ],
   [
@@ -1812,7 +1812,7 @@
     ],
     [
       "h",
-      "L_fresh"
+      "I_fresh"
     ]
   ],
   [
@@ -1822,7 +1822,7 @@
     ],
     [
       "v",
-      "L_pv"
+      "I_pv"
     ]
   ],
   [
@@ -1904,7 +1904,7 @@
     ],
     [
       "t",
-      "L_undefinedmeasurement"
+      "I_undefinedmeasurement"
     ]
   ],
   [
@@ -1934,7 +1934,7 @@
     ],
     [
       "e",
-      "L_failure"
+      "I_failure"
     ]
   ],
   [
@@ -1952,7 +1952,7 @@
     ],
     [
       "d",
-      "L_shed"
+      "I_shed"
     ]
   ],
   [
@@ -1978,7 +1978,7 @@
     ],
     [
       "t",
-      "L_adjust"
+      "I_adjust"
     ]
   ],
   [
@@ -2004,7 +2004,7 @@
     ],
     [
       "r",
-      "L_heater"
+      "I_heater"
     ]
   ],
   [
@@ -2054,7 +2054,7 @@
     ],
     [
       "n",
-      "L_deceleration"
+      "I_deceleration"
     ]
   ],
   [
@@ -2072,7 +2072,7 @@
     ],
     [
       "e",
-      "L_zone"
+      "I_zone"
     ]
   ],
   [
@@ -2090,7 +2090,7 @@
     ],
     [
       "n",
-      "L_rain"
+      "I_rain"
     ]
   ],
   [
@@ -2104,7 +2104,7 @@
     ],
     [
       "r",
-      "L_air"
+      "I_air"
     ]
   ],
   [
@@ -2142,7 +2142,7 @@
     ],
     [
       "e",
-      "L_econcycle"
+      "I_econcycle"
     ]
   ],
   [
@@ -2172,7 +2172,7 @@
     ],
     [
       "e",
-      "L_disable"
+      "I_disable"
     ]
   ],
   [
@@ -2198,7 +2198,7 @@
     ],
     [
       "y",
-      "L_energy"
+      "I_energy"
     ]
   ],
   [
@@ -2212,7 +2212,7 @@
     ],
     [
       "w",
-      "L_low"
+      "I_low"
     ]
   ],
   [
@@ -2242,7 +2242,7 @@
     ],
     [
       "t",
-      "L_coldest"
+      "I_coldest"
     ]
   ],
   [
@@ -2260,7 +2260,7 @@
     ],
     [
       "n",
-      "L_even"
+      "I_even"
     ]
   ],
   [
@@ -2282,7 +2282,7 @@
     ],
     [
       "r",
-      "L_motor"
+      "I_motor"
     ]
   ],
   [
@@ -2300,7 +2300,7 @@
     ],
     [
       "c",
-      "L_hvac"
+      "I_hvac"
     ]
   ],
   [
@@ -2318,7 +2318,7 @@
     ],
     [
       "d",
-      "L_hold"
+      "I_hold"
     ]
   ],
   [
@@ -2356,7 +2356,7 @@
     ],
     [
       "y",
-      "L_emergency"
+      "I_emergency"
     ]
   ],
   [
@@ -2378,7 +2378,7 @@
     ],
     [
       "e",
-      "L_cycle"
+      "I_cycle"
     ]
   ],
   [
@@ -2400,7 +2400,7 @@
     ],
     [
       "t",
-      "L_fault"
+      "I_fault"
     ]
   ],
   [
@@ -2434,7 +2434,7 @@
     ],
     [
       "d",
-      "L_detected"
+      "I_detected"
     ]
   ],
   [
@@ -2448,7 +2448,7 @@
     ],
     [
       "n",
-      "L_fan"
+      "I_fan"
     ]
   ],
   [
@@ -2462,7 +2462,7 @@
     ],
     [
       "s",
-      "L_gas"
+      "I_gas"
     ]
   ],
   [
@@ -2484,7 +2484,7 @@
     ],
     [
       "e",
-      "L_usage"
+      "I_usage"
     ]
   ],
   [
@@ -2514,7 +2514,7 @@
     ],
     [
       "t",
-      "L_percent"
+      "I_percent"
     ]
   ],
   [
@@ -2548,7 +2548,7 @@
     ],
     [
       "y",
-      "L_humidity"
+      "I_humidity"
     ]
   ],
   [
@@ -2582,7 +2582,7 @@
     ],
     [
       "g",
-      "L_lighting"
+      "I_lighting"
     ]
   ],
   [
@@ -2592,7 +2592,7 @@
     ],
     [
       "o",
-      "L_no"
+      "I_no"
     ]
   ],
   [
@@ -2614,7 +2614,7 @@
     ],
     [
       "r",
-      "L_timer"
+      "I_timer"
     ]
   ],
   [
@@ -2628,7 +2628,7 @@
     ],
     [
       "f",
-      "L_off"
+      "I_off"
     ]
   ],
   [
@@ -2662,7 +2662,7 @@
     ],
     [
       "d",
-      "L_fumehood"
+      "I_fumehood"
     ]
   ],
   [
@@ -2696,7 +2696,7 @@
     ],
     [
       "g",
-      "L_building"
+      "I_building"
     ]
   ],
   [
@@ -2730,7 +2730,7 @@
     ],
     [
       "n",
-      "L_duration"
+      "I_duration"
     ]
   ],
   [
@@ -2752,7 +2752,7 @@
     ],
     [
       "m",
-      "L_alarm"
+      "I_alarm"
     ]
   ],
   [
@@ -2770,7 +2770,7 @@
     ],
     [
       "t",
-      "L_vent"
+      "I_vent"
     ]
   ],
   [
@@ -2792,7 +2792,7 @@
     ],
     [
       "d",
-      "L_rated"
+      "I_rated"
     ]
   ],
   [
@@ -2826,7 +2826,7 @@
     ],
     [
       "t",
-      "L_basement"
+      "I_basement"
     ]
   ],
   [
@@ -2844,7 +2844,7 @@
     ],
     [
       "h",
-      "L_high"
+      "I_high"
     ]
   ],
   [
@@ -2874,7 +2874,7 @@
     ],
     [
       "e",
-      "L_storage"
+      "I_storage"
     ]
   ],
   [
@@ -2912,7 +2912,7 @@
     ],
     [
       "g",
-      "L_operating"
+      "I_operating"
     ]
   ],
   [
@@ -2938,7 +2938,7 @@
     ],
     [
       "r",
-      "L_filter"
+      "I_filter"
     ]
   ],
   [
@@ -2980,7 +2980,7 @@
     ],
     [
       "d",
-      "L_unoccupied"
+      "I_unoccupied"
     ]
   ],
   [
@@ -2994,7 +2994,7 @@
     ],
     [
       "g",
-      "L_lag"
+      "I_lag"
     ]
   ],
   [
@@ -3012,7 +3012,7 @@
     ],
     [
       "m",
-      "L_warm"
+      "I_warm"
     ]
   ],
   [
@@ -3050,7 +3050,7 @@
     ],
     [
       "n",
-      "L_isolation"
+      "I_isolation"
     ]
   ],
   [
@@ -3088,7 +3088,7 @@
     ],
     [
       "r",
-      "L_condenser"
+      "I_condenser"
     ]
   ],
   [
@@ -3134,7 +3134,7 @@
     ],
     [
       "n",
-      "L_ventilation"
+      "I_ventilation"
     ]
   ],
   [
@@ -3160,7 +3160,7 @@
     ],
     [
       "s",
-      "L_bypass"
+      "I_bypass"
     ]
   ],
   [
@@ -3198,7 +3198,7 @@
     ],
     [
       "y",
-      "L_frequency"
+      "I_frequency"
     ]
   ],
   [
@@ -3228,7 +3228,7 @@
     ],
     [
       "e",
-      "L_average"
+      "I_average"
     ]
   ],
   [
@@ -3246,7 +3246,7 @@
     ],
     [
       "s",
-      "L_fans"
+      "I_fans"
     ]
   ],
   [
@@ -3264,7 +3264,7 @@
     ],
     [
       "l",
-      "L_cool"
+      "I_cool"
     ]
   ],
   [
@@ -3298,7 +3298,7 @@
     ],
     [
       "e",
-      "L_radiance"
+      "I_radiance"
     ]
   ],
   [
@@ -3356,7 +3356,7 @@
     ],
     [
       "n",
-      "L_humidification"
+      "I_humidification"
     ]
   ],
   [
@@ -3378,7 +3378,7 @@
     ],
     [
       "l",
-      "L_level"
+      "I_level"
     ]
   ],
   [
@@ -3412,7 +3412,7 @@
     ],
     [
       "e",
-      "L_relative"
+      "I_relative"
     ]
   ],
   [
@@ -3430,7 +3430,7 @@
     ],
     [
       "d",
-      "L_wind"
+      "I_wind"
     ]
   ],
   [
@@ -3464,7 +3464,7 @@
     ],
     [
       "l",
-      "L_integral"
+      "I_integral"
     ]
   ],
   [
@@ -3498,7 +3498,7 @@
     ],
     [
       "n",
-      "L_shutdown"
+      "I_shutdown"
     ]
   ],
   [
@@ -3516,7 +3516,7 @@
     ],
     [
       "l",
-      "L_coil"
+      "I_coil"
     ]
   ],
   [
@@ -3554,7 +3554,7 @@
     ],
     [
       "y",
-      "L_occupancy"
+      "I_occupancy"
     ]
   ],
   [
@@ -3568,7 +3568,7 @@
     ],
     [
       "s",
-      "L_bus"
+      "I_bus"
     ]
   ],
   [
@@ -3622,7 +3622,7 @@
     ],
     [
       "n",
-      "L_communication"
+      "I_communication"
     ]
   ],
   [
@@ -3652,7 +3652,7 @@
     ],
     [
       "l",
-      "L_control"
+      "I_control"
     ]
   ],
   [
@@ -3690,7 +3690,7 @@
     ],
     [
       "r",
-      "L_generator"
+      "I_generator"
     ]
   ],
   [
@@ -3716,7 +3716,7 @@
     ],
     [
       "d",
-      "L_demand"
+      "I_demand"
     ]
   ],
   [
@@ -3754,7 +3754,7 @@
     ],
     [
       "y",
-      "L_temporary"
+      "I_temporary"
     ]
   ],
   [
@@ -3780,7 +3780,7 @@
     ],
     [
       "n",
-      "L_button"
+      "I_button"
     ]
   ],
   [
@@ -3862,7 +3862,7 @@
     ],
     [
       "e",
-      "L_thermalenergystorage"
+      "I_thermalenergystorage"
     ]
   ],
   [
@@ -3888,7 +3888,7 @@
     ],
     [
       "m",
-      "L_medium"
+      "I_medium"
     ]
   ],
   [
@@ -3910,7 +3910,7 @@
     ],
     [
       "t",
-      "L_reset"
+      "I_reset"
     ]
   ],
   [
@@ -3960,7 +3960,7 @@
     ],
     [
       "n",
-      "L_acceleration"
+      "I_acceleration"
     ]
   ],
   [
@@ -3990,7 +3990,7 @@
     ],
     [
       "y",
-      "L_locally"
+      "I_locally"
     ]
   ],
   [
@@ -4016,7 +4016,7 @@
     ],
     [
       "e",
-      "L_freeze"
+      "I_freeze"
     ]
   ],
   [
@@ -4058,7 +4058,7 @@
     ],
     [
       "n",
-      "L_exhaustfan"
+      "I_exhaustfan"
     ]
   ],
   [
@@ -4076,7 +4076,7 @@
     ],
     [
       "e",
-      "L_fume"
+      "I_fume"
     ]
   ],
   [
@@ -4094,7 +4094,7 @@
     ],
     [
       "m",
-      "L_room"
+      "I_room"
     ]
   ],
   [
@@ -4132,7 +4132,7 @@
     ],
     [
       "d",
-      "L_activated"
+      "I_activated"
     ]
   ],
   [
@@ -4166,7 +4166,7 @@
     ],
     [
       "e",
-      "L_increase"
+      "I_increase"
     ]
   ],
   [
@@ -4208,7 +4208,7 @@
     ],
     [
       "t",
-      "L_thermostat"
+      "I_thermostat"
     ]
   ],
   [
@@ -4226,7 +4226,7 @@
     ],
     [
       "t",
-      "L_heat"
+      "I_heat"
     ]
   ],
   [
@@ -4244,7 +4244,7 @@
     ],
     [
       "k",
-      "L_tank"
+      "I_tank"
     ]
   ],
   [
@@ -4278,7 +4278,7 @@
     ],
     [
       "d",
-      "L_occupied"
+      "I_occupied"
     ]
   ],
   [
@@ -4296,7 +4296,7 @@
     ],
     [
       "d",
-      "L_load"
+      "I_load"
     ]
   ],
   [
@@ -4334,7 +4334,7 @@
     ],
     [
       "n",
-      "L_returnfan"
+      "I_returnfan"
     ]
   ],
   [
@@ -4360,7 +4360,7 @@
     ],
     [
       "t",
-      "L_cutout"
+      "I_cutout"
     ]
   ],
   [
@@ -4394,7 +4394,7 @@
     ],
     [
       "g",
-      "L_entering"
+      "I_entering"
     ]
   ],
   [
@@ -4436,7 +4436,7 @@
     ],
     [
       "n",
-      "L_overridden"
+      "I_overridden"
     ]
   ],
   [
@@ -4462,7 +4462,7 @@
     ],
     [
       "s",
-      "L_grains"
+      "I_grains"
     ]
   ],
   [
@@ -4512,7 +4512,7 @@
     ],
     [
       "n",
-      "L_dischargefan"
+      "I_dischargefan"
     ]
   ],
   [
@@ -4558,7 +4558,7 @@
     ],
     [
       "m",
-      "L_powersystem"
+      "I_powersystem"
     ]
   ],
   [
@@ -4580,7 +4580,7 @@
     ],
     [
       "o",
-      "L_ratio"
+      "I_ratio"
     ]
   ],
   [
@@ -4602,7 +4602,7 @@
     ],
     [
       "e",
-      "L_smoke"
+      "I_smoke"
     ]
   ],
   [
@@ -4620,7 +4620,7 @@
     ],
     [
       "r",
-      "L_hour"
+      "I_hour"
     ]
   ],
   [
@@ -4650,7 +4650,7 @@
     ],
     [
       "t",
-      "L_preheat"
+      "I_preheat"
     ]
   ],
   [
@@ -4680,7 +4680,7 @@
     ],
     [
       "g",
-      "L_cooling"
+      "I_cooling"
     ]
   ],
   [
@@ -4702,7 +4702,7 @@
     ],
     [
       "d",
-      "L_speed"
+      "I_speed"
     ]
   ],
   [
@@ -4720,7 +4720,7 @@
     ],
     [
       "d",
-      "L_head"
+      "I_head"
     ]
   ],
   [
@@ -4750,7 +4750,7 @@
     ],
     [
       "n",
-      "L_suction"
+      "I_suction"
     ]
   ],
   [
@@ -4788,7 +4788,7 @@
     ],
     [
       "r",
-      "L_condensor"
+      "I_condensor"
     ]
   ],
   [
@@ -4818,7 +4818,7 @@
     ],
     [
       "l",
-      "L_glycool"
+      "I_glycool"
     ]
   ],
   [
@@ -4836,7 +4836,7 @@
     ],
     [
       "t",
-      "L_last"
+      "I_last"
     ]
   ],
   [
@@ -4846,7 +4846,7 @@
     ],
     [
       "i",
-      "L_di"
+      "I_di"
     ]
   ],
   [
@@ -4864,7 +4864,7 @@
     ],
     [
       "l",
-      "L_hail"
+      "I_hail"
     ]
   ],
   [
@@ -4882,7 +4882,7 @@
     ],
     [
       "w",
-      "L_flow"
+      "I_flow"
     ]
   ],
   [
@@ -4940,7 +4940,7 @@
     ],
     [
       "e",
-      "L_demandresponse"
+      "I_demandresponse"
     ]
   ],
   [
@@ -4958,7 +4958,7 @@
     ],
     [
       "d",
-      "L_hood"
+      "I_hood"
     ]
   ],
   [
@@ -4988,7 +4988,7 @@
     ],
     [
       "y",
-      "L_battery"
+      "I_battery"
     ]
   ],
   [
@@ -5002,7 +5002,7 @@
     ],
     [
       "n",
-      "L_run"
+      "I_run"
     ]
   ],
   [
@@ -5036,7 +5036,7 @@
     ],
     [
       "e",
-      "L_decrease"
+      "I_decrease"
     ]
   ],
   [
@@ -5062,7 +5062,7 @@
     ],
     [
       "r",
-      "L_server"
+      "I_server"
     ]
   ],
   [
@@ -5088,7 +5088,7 @@
     ],
     [
       "c",
-      "L_static"
+      "I_static"
     ]
   ],
   [
@@ -5114,7 +5114,7 @@
     ],
     [
       "r",
-      "L_sensor"
+      "I_sensor"
     ]
   ],
   [
@@ -5132,7 +5132,7 @@
     ],
     [
       "d",
-      "L_band"
+      "I_band"
     ]
   ],
   [
@@ -5146,7 +5146,7 @@
     ],
     [
       "r",
-      "L_pir"
+      "I_pir"
     ]
   ],
   [
@@ -5176,7 +5176,7 @@
     ],
     [
       "g",
-      "L_running"
+      "I_running"
     ]
   ],
   [
@@ -5202,7 +5202,7 @@
     ],
     [
       "d",
-      "L_failed"
+      "I_failed"
     ]
   ],
   [
@@ -5232,7 +5232,7 @@
     ],
     [
       "t",
-      "L_warmest"
+      "I_warmest"
     ]
   ],
   [
@@ -5262,7 +5262,7 @@
     ],
     [
       "y",
-      "L_standby"
+      "I_standby"
     ]
   ],
   [
@@ -5304,7 +5304,7 @@
     ],
     [
       "l",
-      "L_thumbwheel"
+      "I_thumbwheel"
     ]
   ],
   [
@@ -5350,7 +5350,7 @@
     ],
     [
       "e",
-      "L_integrative"
+      "I_integrative"
     ]
   ],
   [
@@ -5376,7 +5376,7 @@
     ],
     [
       "m",
-      "L_system"
+      "I_system"
     ]
   ],
   [
@@ -5402,7 +5402,7 @@
     ],
     [
       "y",
-      "L_supply"
+      "I_supply"
     ]
   ],
   [
@@ -5432,7 +5432,7 @@
     ],
     [
       "y",
-      "L_monthly"
+      "I_monthly"
     ]
   ],
   [
@@ -5466,7 +5466,7 @@
     ],
     [
       "c",
-      "L_domestic"
+      "I_domestic"
     ]
   ],
   [
@@ -5504,7 +5504,7 @@
     ],
     [
       "r",
-      "L_exchanger"
+      "I_exchanger"
     ]
   ],
   [
@@ -5534,7 +5534,7 @@
     ],
     [
       "t",
-      "L_exhaust"
+      "I_exhaust"
     ]
   ],
   [
@@ -5556,7 +5556,7 @@
     ],
     [
       "r",
-      "L_tower"
+      "I_tower"
     ]
   ],
   [
@@ -5594,7 +5594,7 @@
     ],
     [
       "e",
-      "L_tolerance"
+      "I_tolerance"
     ]
   ],
   [
@@ -5628,7 +5628,7 @@
     ],
     [
       "y",
-      "L_velocity"
+      "I_velocity"
     ]
   ],
   [
@@ -5678,7 +5678,7 @@
     ],
     [
       "l",
-      "L_differential"
+      "I_differential"
     ]
   ],
   [
@@ -5696,7 +5696,7 @@
     ],
     [
       "s",
-      "L_loss"
+      "I_loss"
     ]
   ],
   [
@@ -5734,7 +5734,7 @@
     ],
     [
       "c",
-      "L_automatic"
+      "I_automatic"
     ]
   ],
   [
@@ -5768,7 +5768,7 @@
     ],
     [
       "e",
-      "L_override"
+      "I_override"
     ]
   ],
   [
@@ -5790,7 +5790,7 @@
     ],
     [
       "h",
-      "L_month"
+      "I_month"
     ]
   ],
   [
@@ -5808,7 +5808,7 @@
     ],
     [
       "f",
-      "L_roof"
+      "I_roof"
     ]
   ],
   [
@@ -5842,7 +5842,7 @@
     ],
     [
       "t",
-      "L_dewpoint"
+      "I_dewpoint"
     ]
   ],
   [
@@ -5864,7 +5864,7 @@
     ],
     [
       "m",
-      "L_steam"
+      "I_steam"
     ]
   ],
   [
@@ -5878,7 +5878,7 @@
     ],
     [
       "x",
-      "L_max"
+      "I_max"
     ]
   ],
   [
@@ -5896,7 +5896,7 @@
     ],
     [
       "d",
-      "L_cold"
+      "I_cold"
     ]
   ],
   [
@@ -5910,7 +5910,7 @@
     ],
     [
       "t",
-      "L_hot"
+      "I_hot"
     ]
   ],
   [
@@ -5944,7 +5944,7 @@
     ],
     [
       "r",
-      "L_elevator"
+      "I_elevator"
     ]
   ],
   [
@@ -6018,7 +6018,7 @@
     ],
     [
       "r",
-      "L_emergencygenerator"
+      "I_emergencygenerator"
     ]
   ],
   [
@@ -6052,7 +6052,7 @@
     ],
     [
       "y",
-      "L_humidify"
+      "I_humidify"
     ]
   ],
   [
@@ -6066,7 +6066,7 @@
     ],
     [
       "e",
-      "L_ice"
+      "I_ice"
     ]
   ],
   [
@@ -6104,7 +6104,7 @@
     ],
     [
       "d",
-      "L_deionised"
+      "I_deionised"
     ]
   ],
   [
@@ -6146,7 +6146,7 @@
     ],
     [
       "r",
-      "L_economizer"
+      "I_economizer"
     ]
   ],
   [
@@ -6168,7 +6168,7 @@
     ],
     [
       "e",
-      "L_drive"
+      "I_drive"
     ]
   ],
   [
@@ -6182,7 +6182,7 @@
     ],
     [
       "u",
-      "L_ahu"
+      "I_ahu"
     ]
   ],
   [
@@ -6204,7 +6204,7 @@
     ],
     [
       "l",
-      "L_wheel"
+      "I_wheel"
     ]
   ],
   [
@@ -6222,7 +6222,7 @@
     ],
     [
       "d",
-      "L_lead"
+      "I_lead"
     ]
   ],
   [
@@ -6256,7 +6256,7 @@
     ],
     [
       "n",
-      "L_position"
+      "I_position"
     ]
   ],
   [
@@ -6286,7 +6286,7 @@
     ],
     [
       "d",
-      "L_chilled"
+      "I_chilled"
     ]
   ],
   [
@@ -6308,7 +6308,7 @@
     ],
     [
       "r",
-      "L_solar"
+      "I_solar"
     ]
   ],
   [
@@ -6362,7 +6362,7 @@
     ],
     [
       "c",
-      "L_piezoelectric"
+      "I_piezoelectric"
     ]
   ],
   [
@@ -6384,7 +6384,7 @@
     ],
     [
       "e",
-      "L_valve"
+      "I_valve"
     ]
   ],
   [
@@ -6406,7 +6406,7 @@
     ],
     [
       "t",
-      "L_frost"
+      "I_frost"
     ]
   ],
   [
@@ -6424,7 +6424,7 @@
     ],
     [
       "p",
-      "L_stop"
+      "I_stop"
     ]
   ],
   [
@@ -6438,7 +6438,7 @@
     ],
     [
       "n",
-      "L_min"
+      "I_min"
     ]
   ],
   [
@@ -6456,7 +6456,7 @@
     ],
     [
       "n",
-      "L_when"
+      "I_when"
     ]
   ],
   [
@@ -6474,7 +6474,7 @@
     ],
     [
       "s",
-      "L_dhws"
+      "I_dhws"
     ]
   ],
   [
@@ -6492,7 +6492,7 @@
     ],
     [
       "t",
-      "L_unit"
+      "I_unit"
     ]
   ],
   [
@@ -6518,7 +6518,7 @@
     ],
     [
       "n",
-      "L_return"
+      "I_return"
     ]
   ],
   [
@@ -6540,7 +6540,7 @@
     ],
     [
       "r",
-      "L_meter"
+      "I_meter"
     ]
   ],
   [
@@ -6558,7 +6558,7 @@
     ],
     [
       "g",
-      "L_wing"
+      "I_wing"
     ]
   ],
   [
@@ -6568,7 +6568,7 @@
     ],
     [
       "n",
-      "L_on"
+      "I_on"
     ]
   ],
   [
@@ -6594,7 +6594,7 @@
     ],
     [
       "e",
-      "L_enable"
+      "I_enable"
     ]
   ],
   [
@@ -6608,7 +6608,7 @@
     ],
     [
       "d",
-      "L_led"
+      "I_led"
     ]
   ],
   [
@@ -6654,7 +6654,7 @@
     ],
     [
       "m",
-      "L_watersystem"
+      "I_watersystem"
     ]
   ],
   [
@@ -6680,7 +6680,7 @@
     ],
     [
       "s",
-      "L_stages"
+      "I_stages"
     ]
   ],
   [
@@ -6706,7 +6706,7 @@
     ],
     [
       "r",
-      "L_factor"
+      "I_factor"
     ]
   ],
   [
@@ -6740,7 +6740,7 @@
     ],
     [
       "d",
-      "L_dualband"
+      "I_dualband"
     ]
   ],
   [
@@ -6758,7 +6758,7 @@
     ],
     [
       "n",
-      "L_turn"
+      "I_turn"
     ]
   ],
   [
@@ -6792,7 +6792,7 @@
     ],
     [
       "t",
-      "L_setpoint"
+      "I_setpoint"
     ]
   ],
   [
@@ -6818,7 +6818,7 @@
     ],
     [
       "h",
-      "L_switch"
+      "I_switch"
     ]
   ],
   [
@@ -6848,7 +6848,7 @@
     ],
     [
       "g",
-      "L_heating"
+      "I_heating"
     ]
   ],
   [
@@ -6874,7 +6874,7 @@
     ],
     [
       "t",
-      "L_reheat"
+      "I_reheat"
     ]
   ],
   [
@@ -6900,7 +6900,7 @@
     ],
     [
       "t",
-      "L_lowest"
+      "I_lowest"
     ]
   ],
   [
@@ -6914,7 +6914,7 @@
     ],
     [
       "s",
-      "L_hws"
+      "I_hws"
     ]
   ],
   [
@@ -6928,7 +6928,7 @@
     ],
     [
       "s",
-      "L_cws"
+      "I_cws"
     ]
   ],
   [
@@ -6962,7 +6962,7 @@
     ],
     [
       "e",
-      "L_pressure"
+      "I_pressure"
     ]
   ],
   [
@@ -6992,7 +6992,7 @@
     ],
     [
       "e",
-      "L_outside"
+      "I_outside"
     ]
   ],
   [
@@ -7006,7 +7006,7 @@
     ],
     [
       "v",
-      "L_vav"
+      "I_vav"
     ]
   ],
   [
@@ -7024,7 +7024,7 @@
     ],
     [
       "e",
-      "L_fire"
+      "I_fire"
     ]
   ],
   [
@@ -7046,7 +7046,7 @@
     ],
     [
       "t",
-      "L_start"
+      "I_start"
     ]
   ],
   [
@@ -7056,7 +7056,7 @@
     ],
     [
       "y",
-      "L_by"
+      "I_by"
     ]
   ],
   [
@@ -7074,7 +7074,7 @@
     ],
     [
       "e",
-      "L_time"
+      "I_time"
     ]
   ],
   [
@@ -7140,7 +7140,7 @@
     ],
     [
       "n",
-      "L_dehumidification"
+      "I_dehumidification"
     ]
   ],
   [
@@ -7182,7 +7182,7 @@
     ],
     [
       "e",
-      "L_condensate"
+      "I_condensate"
     ]
   ],
   [
@@ -7208,7 +7208,7 @@
     ],
     [
       "r",
-      "L_boiler"
+      "I_boiler"
     ]
   ],
   [
@@ -7238,7 +7238,7 @@
     ],
     [
       "d",
-      "L_command"
+      "I_command"
     ]
   ],
   [
@@ -7272,7 +7272,7 @@
     ],
     [
       "d",
-      "L_required"
+      "I_required"
     ]
   ],
   [
@@ -7298,7 +7298,7 @@
     ],
     [
       "e",
-      "L_change"
+      "I_change"
     ]
   ],
   [
@@ -7332,7 +7332,7 @@
     ],
     [
       "y",
-      "L_capacity"
+      "I_capacity"
     ]
   ],
   [
@@ -7382,7 +7382,7 @@
     ],
     [
       "y",
-      "L_conductivity"
+      "I_conductivity"
     ]
   ],
   [
@@ -7416,7 +7416,7 @@
     ],
     [
       "y",
-      "L_enthalpy"
+      "I_enthalpy"
     ]
   ],
   [
@@ -7462,7 +7462,7 @@
     ],
     [
       "t",
-      "L_environment"
+      "I_environment"
     ]
   ],
   [
@@ -7488,7 +7488,7 @@
     ],
     [
       "s",
-      "L_status"
+      "I_status"
     ]
   ],
   [
@@ -7526,7 +7526,7 @@
     ],
     [
       "r",
-      "L_perimeter"
+      "I_perimeter"
     ]
   ],
   [
@@ -7592,7 +7592,7 @@
     ],
     [
       "l",
-      "L_firecontrolpanel"
+      "I_firecontrolpanel"
     ]
   ],
   [
@@ -7646,7 +7646,7 @@
     ],
     [
       "r",
-      "L_heatexchanger"
+      "I_heatexchanger"
     ]
   ],
   [
@@ -7668,7 +7668,7 @@
     ],
     [
       "e",
-      "L_space"
+      "I_space"
     ]
   ],
   [
@@ -7710,7 +7710,7 @@
     ],
     [
       "y",
-      "L_laboratory"
+      "I_laboratory"
     ]
   ],
   [
@@ -7752,7 +7752,7 @@
     ],
     [
       "r",
-      "L_underfloor"
+      "I_underfloor"
     ]
   ],
   [
@@ -7770,7 +7770,7 @@
     ],
     [
       "c",
-      "L_crac"
+      "I_crac"
     ]
   ],
   [
@@ -7788,7 +7788,7 @@
     ],
     [
       "d",
-      "L_hand"
+      "I_hand"
     ]
   ],
   [
@@ -7818,7 +7818,7 @@
     ],
     [
       "t",
-      "L_request"
+      "I_request"
     ]
   ],
   [
@@ -7844,7 +7844,7 @@
     ],
     [
       "n",
-      "L_motion"
+      "I_motion"
     ]
   ],
   [
@@ -7870,7 +7870,7 @@
     ],
     [
       "t",
-      "L_output"
+      "I_output"
     ]
   ],
   [
@@ -7892,7 +7892,7 @@
     ],
     [
       "e",
-      "L_stage"
+      "I_stage"
     ]
   ],
   [
@@ -7934,7 +7934,7 @@
     ],
     [
       "l",
-      "L_solarpanel"
+      "I_solarpanel"
     ]
   ],
   [
@@ -7968,7 +7968,7 @@
     ],
     [
       "d",
-      "L_overload"
+      "I_overload"
     ]
   ],
   [
@@ -7986,7 +7986,7 @@
     ],
     [
       "e",
-      "L_mode"
+      "I_mode"
     ]
   ],
   [
@@ -7996,7 +7996,7 @@
     ],
     [
       "c",
-      "L_dc"
+      "I_dc"
     ]
   ],
   [
@@ -8018,7 +8018,7 @@
     ],
     [
       "y",
-      "L_ready"
+      "I_ready"
     ]
   ],
   [
@@ -8076,7 +8076,7 @@
     ],
     [
       "m",
-      "L_lightingsystem"
+      "I_lightingsystem"
     ]
   ],
   [
@@ -8106,7 +8106,7 @@
     ],
     [
       "t",
-      "L_protect"
+      "I_protect"
     ]
   ],
   [
@@ -8136,7 +8136,7 @@
     ],
     [
       "h",
-      "L_azimuth"
+      "I_azimuth"
     ]
   ],
   [
@@ -8166,7 +8166,7 @@
     ],
     [
       "r",
-      "L_chiller"
+      "I_chiller"
     ]
   ],
   [
@@ -8200,7 +8200,7 @@
     ],
     [
       "e",
-      "L_schedule"
+      "I_schedule"
     ]
   ],
   [
@@ -8218,7 +8218,7 @@
     ],
     [
       "e",
-      "L_code"
+      "I_code"
     ]
   ],
   [
@@ -8248,7 +8248,7 @@
     ],
     [
       "t",
-      "L_current"
+      "I_current"
     ]
   ],
   [
@@ -8262,7 +8262,7 @@
     ],
     [
       "u",
-      "L_fcu"
+      "I_fcu"
     ]
   ],
   [
@@ -8300,7 +8300,7 @@
     ],
     [
       "e",
-      "L_effective"
+      "I_effective"
     ]
   ],
   [
@@ -8318,7 +8318,7 @@
     ],
     [
       "n",
-      "L_open"
+      "I_open"
     ]
   ]
 ]

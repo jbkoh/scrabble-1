@@ -6,6 +6,7 @@ import re
 from collections import defaultdict, OrderedDict
 import pdb
 import sys
+import requests
 
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from scipy.cluster.hierarchy import linkage
@@ -260,3 +261,9 @@ def get_label_dict(building):
         data = json.load(fp)
     return data
 
+def slack_notifier(msg):
+    webhook_url = 'https://hooks.slack.com/services/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'
+    body = {
+        'text': msg
+       }
+    res = requests.post(webhook_url, json=body)

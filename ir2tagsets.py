@@ -101,6 +101,7 @@ class Ir2Tagsets(BaseScrabble):
                  source_buildings=[],
                  source_sample_num_list=[],
                  learning_srcids=[],
+                 known_tags_dict={},
                  conf={}):
         super(Ir2Tagsets, self).__init__(
                  target_building,
@@ -115,6 +116,7 @@ class Ir2Tagsets(BaseScrabble):
         self.ts2ir = None
         self.ts_feature_filename = 'TS_Features/features.pkl'
 
+        self.known_tags_dict = known_tags_dict
         if 'use_cluster_flag' in conf:
             self.use_cluster_flag = conf['use_cluster_flag']
         else:
@@ -130,8 +132,8 @@ class Ir2Tagsets(BaseScrabble):
         if 'n_jobs' in conf:
             self.n_jobs = conf['n_jobs']
         else:
-            self.n_jobs = 1
-            #self.n_jobs = 6
+            #self.n_jobs = 1
+            self.n_jobs = 6
         if 'ts_flag' in conf:
             self.ts_flag = conf['ts_flag']
         else:
@@ -156,6 +158,11 @@ class Ir2Tagsets(BaseScrabble):
             self.query_strategy = conf['query_strategy']
         else:
             self.query_strategy = 'phrase_util'
+        if 'use_known_tags' in conf:
+            self.use_known_tags = conf['use_known_tags']
+        else:
+            self.use_known_tags = False
+
         self._init_data()
         self._init_brick()
 
@@ -218,7 +225,7 @@ class Ir2Tagsets(BaseScrabble):
         self.learning_srcids += srcids
         self.target_srcids = [srcid for srcid in self.target_srcids
                               if srcid not in self.learning_srcids]
-        invalid_num = sum([srcid not in self.tagsets_dict for srcid in 
+        invalid_num = sum([srcid not in self.tagsets_dict for srcid in
                            self.learning_srcids + self.target_srcids]) #debug
         self._extend_tagset_list(reduce(adder, [self.tagsets_dict[srcid]
             for srcid in self.learning_srcids + self.target_srcids]))
@@ -332,7 +339,11 @@ class Ir2Tagsets(BaseScrabble):
                        for srcid in target_srcids}
         if self.ts_flag:
             phrase_dict = self._augment_phrases_with_ts(phrase_dict, target_srcids, self.ts2ir)
-        doc = [' '.join(phrase_dict[srcid]) for srcid in target_srcids]
+        if self.use_known_tags:
+            doc = [' '.join(phrase_dict[srcid] + self.known_tags_dict[srcid])
+                   for srcid in target_srcids]
+        else:
+            doc = [' '.join(phrase_dict[srcid]) for srcid in target_srcids]
         vect_doc = self.tagset_vectorizer.transform(doc) # should this be fit_transform?
 
         certainty_dict = dict()
@@ -653,10 +664,18 @@ class Ir2Tagsets(BaseScrabble):
             #TODO: Run self._augment_with_ts()
 
         ## Transform learning samples
-        learning_doc = [' '.join(self.phrase_dict[srcid])
-                        for srcid in learning_srcids]
-        test_doc = [' '.join(self.phrase_dict[srcid])
-                    for srcid in target_srcids]
+        if self.use_known_tags:
+            learning_doc = [' '.join(self.phrase_dict[srcid] +
+                                     self.known_tags_dict[srcid])
+                            for srcid in learning_srcids]
+            test_doc = [' '.join(self.phrase_dict[srcid] +
+                                 self.known_tags_dict[srcid])
+                        for srcid in target_srcids]
+        else:
+            learning_doc = [' '.join(self.phrase_dict[srcid])
+                            for srcid in learning_srcids]
+            test_doc = [' '.join(self.phrase_dict[srcid])
+                        for srcid in target_srcids]
 
         ## Augment with negative examples.
         if self.negative_flag:
