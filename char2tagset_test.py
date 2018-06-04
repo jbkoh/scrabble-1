@@ -2,19 +2,32 @@ import arrow
 import pdb
 import json
 from copy import deepcopy
+import os
 
 from scrabble import Scrabble
 from data_model import *
 from common import *
 import random
 
+
+args =argparser.parse_args()
+
+
 t0 = arrow.get()
 
 connect('oracle')
 
-target_building = 'ap_m'
-source_buildings = ['ebu3b', 'ap_m']
-source_sample_num_list = [200, 10]
+#target_building = 'ap_m'
+#source_buildings = ['ap_m']
+#source_buildings = ['ebu3b', 'ap_m']
+#source_sample_num_list = [200, 10]
+#source_sample_num_list = [200, 10]
+
+res_obj = get_result_obj(args)
+
+source_buildings = args.source_building_list
+target_building = args.target_building
+source_sample_num_list = args.sample_num_list
 
 building_sentence_dict, target_srcids, building_label_dict,\
     building_tagsets_dict, known_tags_dict = load_data(target_building,
@@ -26,11 +39,32 @@ for building, tagsets_dict in building_tagsets_dict.items():
 t1 = arrow.get()
 print(t1-t0)
 config = {
-    'use_known_tags': True,
-    'n_jobs':30,
-    'tagset_classifier_type': 'MLP',
-    'use_brick_flag': True,
+    'use_known_tags': args.use_known_tags,
+    'n_jobs': args.n_jobs,
+    'tagset_classifier_type': args.tagset_classifier_type,
+    'use_brick_flag': args.use_brick_flag,
 }
+
+learning_srcid_file = 'metadata/test'
+for building, source_sample_num in zip(source_buildings,
+                                       source_sample_num_list):
+    learning_srcid_file += '_{0}_{1}'.format(building, source_sample_num)
+learning_srcid_file += '_srcids.json'
+
+if os.path.isfile(learning_srcid_file):
+    with open(learning_srcid_file, 'r') as fp:
+        predefined_learning_srcids = json.load(fp)
+else:
+    predefined_learning_srcids = []
+    for building, source_sample_num in zip(source_buildings,
+                                           source_sample_num_list):
+        predefined_learning_srcids += select_random_samples(building,
+                                                 building_tagsets_dict[building].keys(),
+                                                 source_sample_num,
+                                                 True)
+    with open(learning_srcid_file, 'w') as fp:
+        json.dump(predefined_learning_srcids, fp)
+
 scrabble = Scrabble(target_building,
                     target_srcids,
                     building_label_dict,
@@ -39,7 +73,8 @@ scrabble = Scrabble(target_building,
                     source_buildings,
                     source_sample_num_list,
                     known_tags_dict,
-                    config=config
+                    config=config,
+                    learning_srcids=predefined_learning_srcids
                     )
 
 scrabble.update_model([])
@@ -59,10 +94,8 @@ for i in range(0, 20):
         'pred_tags': pred_tags,
         'learning_srcids': list(set(deepcopy(scrabble.learning_srcids)))
     }
-    history.append(hist)
-
-    t3 = arrow.get()
+    #history.append(hist)
+    #t3 = arrow.get()
+    res_obj.history.append(hist)
+    res_obj.save()
     print('{0}th took {1}'.format(i, t3 - t2))
-
-    with open('result/scrabble_history_debug_{0}.json'.format(target_building), 'w') as fp:
-        json.dump(history, fp)

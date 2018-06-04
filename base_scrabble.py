@@ -28,7 +28,7 @@ class BaseScrabble(object):
                  source_buildings=[],
                  source_sample_num_list=[],
                  learning_srcids=[],
-                 conf={}):
+                 config={}):
         self.source_buildings = source_buildings
         self.target_building = target_building
         if self.target_building not in self.source_buildings:
@@ -41,7 +41,7 @@ class BaseScrabble(object):
         self.building_label_dict = building_label_dict
         self.target_srcids = target_srcids
         self.learning_srcids = learning_srcids
-        self.conf = conf
+        self.config = config
         self.history = []
 
     def sub_dict_by_key_set(self, d, ks):

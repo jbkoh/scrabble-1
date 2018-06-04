@@ -17,3 +17,16 @@ class LabeledMetadata(Document):
 column_names = ['VendorGivenName', 
                  'BACnetName', 
                  'BACnetDescription']
+
+class ResultHistory(Document):
+    history = ListField()
+    use_brick_flag = BooleanField()
+    use_known_tags = BooleanField()
+    sample_num_list = ListField()
+    target_building = StringField(required=True)
+    negative_flag = BooleanField()
+    entqs = StringField()
+    crfqs = StringField()
+    tagset_classifier_type = StringField()
+    postfix = StringField()
+
