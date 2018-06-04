@@ -26,6 +26,7 @@ class Scrabble(BaseScrabble):
                  building_tagsets_dict,
                  source_buildings,
                  source_sample_num_list,
+                 known_tags_dict={},
                  config={},
                  learning_srcids=[]
                  ):
@@ -40,6 +41,7 @@ class Scrabble(BaseScrabble):
                  deepcopy(learning_srcids),
                  config)
         self.target_srcids = target_srcids
+        self.known_tags_dict = known_tags_dict
         if 'use_cluster_flag' in config:
             self.use_cluster_flag = config['use_cluster_flag']
         else:
@@ -63,7 +65,8 @@ class Scrabble(BaseScrabble):
                                      source_buildings,
                                      source_sample_num_list,
                                      deepcopy(self.learning_srcids),
-                                     config
+                                     known_tags_dict=known_tags_dict,
+                                     config=config
                                      )
 
     def init_data(self):

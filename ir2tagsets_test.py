@@ -7,42 +7,27 @@ from copy import deepcopy
 
 from ir2tagsets import Ir2Tagsets
 from data_model import *
+from common import *
 
 t0 = arrow.get()
 
 connect('oracle')
 
-def elem2list(elem):
-    if isinstance(elem, str):
-        return elem.split('_')
-    else:
-        return []
 
 
-def csv2json(df, key_idx, value_idx):
-    keys = df[key_idx].tolist()
-    values = df[value_idx].tolist()
-    return {k: elem2list(v) for k, v in zip(keys, values)}
-
-units = csv2json(pd.read_csv('metadata/unit_mapping.csv'),
-                 'unit', 'word')
-units[None] = []
-units[''] = []
-bacnettypes = csv2json(pd.read_csv('metadata/bacnettype_mapping.csv'),
-                       'bacnet_type_str', 'candidates')
-bacnettypes[None] = []
-bacnettypes[''] = []
-
-column_names = ['VendorGivenName',
-                 'BACnetName', 
-                 'BACnetDescription']
-
-known_tags_dict = defaultdict(list)
 
 target_building = 'ap_m'
-source_buildings = ['ap_m']
-source_sample_num_list = [10]
+#source_buildings = ['ap_m']
+#source_sample_num_list = [10]
+source_buildings = ['ebu3b', 'ap_m']
+source_sample_num_list = [200, 10]
+building_sentence_dict, target_srcids, building_label_dict,\
+    building_tagsets_dict, known_tags_dict= load_data(target_building, source_buildings)
 
+tot_label_dict = {}
+for building, tagsets_dict in building_tagsets_dict.items():
+    tot_label_dict.update(tagsets_dict )
+"""
 building_sentence_dict = dict()
 building_label_dict = dict()
 building_tagsets_dict = dict()
@@ -81,6 +66,7 @@ for building in source_buildings:
         known_tags_dict[srcid] += units[metadata.get('BACnetUnit')]
         #known_tags_dict[srcid] += bacnettypes[metadata.get('BACnetTypeStr')]
     building_sentence_dict[building] = sentence_dict
+"""
 
 known_tags_dict = dict(known_tags_dict)
 target_srcids = list(building_label_dict[target_building].keys())
@@ -94,9 +80,13 @@ ir2tagsets = Ir2Tagsets(target_building,
                         source_buildings,
                         source_sample_num_list,
                         known_tags_dict=known_tags_dict,
-                        conf={
-                            'use_known_tags': False,
-                            'n_jobs':24
+                        config={
+                            'use_known_tags': True,
+                            'n_jobs':30,
+                            'vectorizer_type': 'tfidf',
+                            'tagset_classifier_type': 'MLP',
+                            'use_brick_flag': True,
+                            #'query_strategy': 'phrase_util'
                         }
                         )
 
@@ -107,13 +97,19 @@ for i in range(0, 20):
     new_srcids = ir2tagsets.select_informative_samples(10)
     ir2tagsets.update_model(new_srcids)
     pred = ir2tagsets.predict(target_srcids + ir2tagsets.learning_srcids)
-    proba = ir2tagsets.predict_proba(target_srcids)
-    t3 = arrow.get()
+    tot_acc, tot_point_acc, learning_acc, learning_point_acc = \
+        calc_acc(tot_label_dict, pred, target_srcids,
+                 ir2tagsets.learning_srcids)
+    print_status(ir2tagsets, tot_acc, tot_point_acc,
+                 learning_acc, learning_point_acc)
     hist = {
-        'sricds': deepcopy(ir2tagsets.learning_srcids),
-        'pred': pred
+        'pred': pred,
+        'learning_srcids': list(set(deepcopy(ir2tagsets.learning_srcids))),
     }
     history.append(hist)
+
+    t3 = arrow.get()
     print('{0}th took {1}'.format(i, t3 - t2))
-    with open('result/test_tagsonly.json', 'w') as fp:
-        json.dump(history, fp, indent=2)
+
+    with open('result/tagsets_only_total_{0}.json'.format(target_building), 'w') as fp:
+        json.dump(history, fp)

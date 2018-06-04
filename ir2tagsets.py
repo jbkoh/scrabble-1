@@ -20,6 +20,10 @@ from skmultilearn.problem_transform import LabelPowerset, ClassifierChain, \
     BinaryRelevance
 from sklearn.metrics import precision_recall_fscore_support
 
+from keras.layers import Input, Dense
+from keras.models import Sequential
+from keras import regularizers
+
 from time_series_to_ir import TimeSeriesToIR
 from base_scrabble import BaseScrabble
 from common import *
@@ -31,6 +35,12 @@ from brick_parser import pointTagsetList        as  point_tagsets,\
                          equipSubclassDict      as  equip_subclass_dict,\
                          locationSubclassDict   as  location_subclass_dict,\
                          tagsetTree             as  tagset_tree
+
+import tensorflow as tf
+from keras.backend.tensorflow_backend import set_session
+config = tf.ConfigProto()
+config.gpu_options.per_process_gpu_memory_fraction= 0.45
+set_session(tf.Session(config=config))
 
 
 def gen_uuid():
@@ -222,7 +232,7 @@ class Ir2Tagsets(BaseScrabble):
         self.tagset_list = list(set(self.tagset_list))
 
     def update_model(self, srcids):
-        self.learning_srcids += srcids
+        self.learning_srcids += list(srcids) * 2
         self.target_srcids = [srcid for srcid in self.target_srcids
                               if srcid not in self.learning_srcids]
         invalid_num = sum([srcid not in self.tagsets_dict for srcid in
@@ -303,14 +313,52 @@ class Ir2Tagsets(BaseScrabble):
                                  )
         return todo_srcids
 
+    def ir2tagset_al_query_entropy(target_prob_mat,
+                                   target_srcids,
+                                   learning_srcids,
+                                   target_building,
+                                   inc_num
+                                   ):
+        entropies = get_entropy(target_prob_mat.T)
+        sorted_entropies = sorted([(target_srcids[i], ent) for i, ent
+                                   in enumerate(entropies)], key=itemgetter(1))
+        cluster_dict = get_cluster_dict(target_building)
+        added_cids = []
+        todo_srcids = []
+        new_srcid_cnt = 0
+        for srcid, ent in sorted_entropies:
+            if srcid in learning_srcids:
+                continue
+            the_cid = None
+            for cid, cluster in cluster_dict.items():
+                if srcid in cluster:
+                    the_cid = cid
+                    break
+            if the_cid in added_cids:
+                continue
+            added_cids.append(the_cid)
+            todo_srcids.append(srcid)
+            new_srcid_cnt += 1
+            if new_srcid_cnt == inc_num:
+                break
+        return todo_srcids
+
     def select_informative_samples(self, sample_num):
-        pred = self.predict(self.target_srcids)
         if self.query_strategy == 'phrase_util':
+            pred = self.predict(self.target_srcids)
             new_srcids = self.ir2tagset_al_query_samples_phrase_util(
                                 self.target_srcids,
                                 self.target_building,
                                 pred,
                                 sample_num)
+        elif query_strategy == 'entropy':
+            proba = self.predict_proba(self.target_srcids)
+            new_srcids = self.ir2tagset_al_query_entropy(
+                             proba,
+                             self.target_srcids,
+                             self.learning_srcids,
+                             self.target_building,
+                             sample_num)
         else:
             raise ValueError('Query Strategy Wrong: {0}'.format(query_strategy))
         return new_srcids
@@ -348,8 +396,14 @@ class Ir2Tagsets(BaseScrabble):
 
         certainty_dict = dict()
         tagsets_dict = dict()
-        pred_mat = self.tagset_classifier.predict(vect_doc)
-        prob_mat = self.tagset_classifier.predict_proba(vect_doc)
+        if self.tagset_classifier_type == 'MLP':
+            pred_mat = self.tagset_classifier.predict(vect_doc)
+            prob_mat = deepcopy(pred_mat)
+            pred_mat[pred_mat >= 0.5] = 1
+            pred_mat[pred_mat < 0.5] = 0
+        else:
+            pred_mat = self.tagset_classifier.predict(vect_doc)
+            prob_mat = self.tagset_classifier.predict_proba(vect_doc)
         if not isinstance(pred_mat, np.ndarray):
             try:
                 pred_mat = pred_mat.toarray()
@@ -376,7 +430,7 @@ class Ir2Tagsets(BaseScrabble):
     def predict(self, target_srcids=None):
         if not target_srcids:
             target_srcids =self.target_srcids
-        pred, _ =self._predict_and_proba(target_srcids)
+        pred, _ = self._predict_and_proba(target_srcids)
         return pred
 
     def predict_proba(self, target_srcids=None):
@@ -671,6 +725,11 @@ class Ir2Tagsets(BaseScrabble):
             test_doc = [' '.join(self.phrase_dict[srcid] +
                                  self.known_tags_dict[srcid])
                         for srcid in target_srcids]
+            learning_doc += [' '.join(self.phrase_dict[srcid])
+                            for srcid in learning_srcids]
+            test_doc += [' '.join(self.phrase_dict[srcid])
+                        for srcid in target_srcids]
+            learning_srcids *= 2
         else:
             learning_doc = [' '.join(self.phrase_dict[srcid])
                             for srcid in learning_srcids]
@@ -770,7 +829,7 @@ class Ir2Tagsets(BaseScrabble):
 
         elif self.tagset_classifier_type == 'StructuredCC_autoencoder':
             def meta_scc(**kwargs):
-                feature_selector = SelectFromModel(LinearSVC(C=1))
+                feature_selector = SelectFromModel(LinearSVC(C=5))
                 #feature_selector = SelectFromModel(LinearSVC(C=0.01, penalty='l1', dual=False))
                 base_base_classifier = GradientBoostingClassifier(**kwargs)
                 #base_base_classifier = SGDClassifier(loss='modified_huber', penalty='elasticnet')
@@ -813,6 +872,8 @@ class Ir2Tagsets(BaseScrabble):
 
         elif self.tagset_classifier_type == 'StructuredCC':
             def meta_scc(**kwargs):
+                #feature_selector = SelectFromModel(LinearSVC(C=5))
+                #feature_selector = SelectFromModel(LinearSVC(C=1))
                 feature_selector = SelectFromModel(LinearSVC(C=1))
                 #feature_selector = SelectFromModel(LinearSVC(C=0.01, penalty='l1', dual=False))
                 base_base_classifier = GradientBoostingClassifier(**kwargs)
@@ -886,21 +947,50 @@ class Ir2Tagsets(BaseScrabble):
                                         tagset_tree, tagset_list)
             meta_classifier = meta_voting
             params_list_dict = {}
+        elif self.tagset_classifier_type == 'MLP':
+            # Def model
+            data_dim = learning_vect_doc.shape[1]
+            output_classes = truth_mat.shape[1]
+            model = Sequential()
+            model.add(Dense(64, input_shape=(data_dim,),
+                            #bias_regularizer=regularizers.l1(0.0001),
+                            #kernel_regularizer=regularizers.l1(0.001),
+                            #activity_regularizer=regularizers.l1(0.001),
+                            activation='relu'))
+            model.add(Dense(output_classes,
+                            #bias_regularizer=regularizers.l1(0.0001),
+                            #kernel_regularizer=regularizers.l1(0.0001),
+                            #activity_regularizer=regularizers.l2(0.01),
+                            activation='sigmoid'))
+            model.compile(optimizer='rmsprop',
+                          loss='binary_crossentropy',)
         else:
-            assert False
+            raise Exception('Wrong tagset classifier type: {0}'
+                            .format(self.tagset_classifier_type))
 
         if not isinstance(truth_mat, csr_matrix):
             truth_mat = csr_matrix(truth_mat)
 
         # TODO: Hyper-parameter optimization. (But expect it'd be slow.)
-        best_params = {'learning_rate':0.1, 'subsample':0.25}
-        self.tagset_classifier  = meta_classifier(**best_params)
+        if self.tagset_classifier_type == 'MLP':
+            self.tagset_classifier = model
+        else:
+            best_params = {'learning_rate':0.1,
+                           'subsample':0.25,
+                           'n_estimators': 200}
+            self.tagset_classifier  = meta_classifier(**best_params)
 
         # Actual fitting.
         if isinstance(self.tagset_classifier, StructuredClassifierChain):
             self.tagset_classifier.fit(learning_vect_doc, truth_mat.toarray(), \
                                   orig_sample_num=len(learning_vect_doc)
                                   - len(self.brick_srcids))
+        elif self.tagset_classifier_type == 'MLP':
+            self.tagset_classifier.fit(learning_vect_doc,
+                                       truth_mat,
+                                       batch_size=128,
+                                       epochs=250,
+                                       verbose=False)
         else:
             self.tagset_classifier.fit(learning_vect_doc, truth_mat.toarray())
         #self.point_classifier.fit(point_vect_doc, point_truth_mat)

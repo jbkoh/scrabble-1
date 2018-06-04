@@ -59,6 +59,14 @@ class Char2Ir(BaseScrabble):
         else:
             self.use_cluster_flag = True
 
+        if 'available_metadata_types' in conf:
+            self.available_metadata_types = conf['available_metadata_types']
+        else:
+            self.available_metadata_types = ['VendorGivenName',
+                                             'BACnetDescription',
+                                             'BACnetName',
+                                             ]
+
         # Note: Hardcode to disable use_brick_flag
         """
         if 'use_brick_flag' in conf:
@@ -120,10 +128,10 @@ class Char2Ir(BaseScrabble):
         trainer.set_params({'feature.possible_states': True,
                             'feature.possible_transitions': True})
         for srcid in self.learning_srcids:
-            sentence = self.sentence_dict[srcid]
-            labels = self.label_dict[srcid]
-            trainer.append(pycrfsuite.ItemSequence(
-                self._calc_features(sentence, None)), labels)
+            for metadata_type, sentence in self.sentence_dict[srcid].items():
+                labels = self.label_dict[srcid][metadata_type]
+                trainer.append(pycrfsuite.ItemSequence(
+                    self._calc_features(sentence, None)), labels)
         if self.use_brick_flag:
             for srcid in self.brick_srcids:
                 sentence = self.brick_sentence_dict[srcid]
@@ -132,7 +140,10 @@ class Char2Ir(BaseScrabble):
                     self._calc_features(sentence, None)), labels)
         model_uuid = gen_uuid()
         crf_model_file = 'temp/{0}.{1}.model'.format(model_uuid, 'crfsuite')
+        t0 = arrow.get()
         trainer.train(crf_model_file)
+        t1 = arrow.get()
+        print('training crf took: {0}'.format(t1 - t0))
         with open(crf_model_file, 'rb') as fp:
             model_bin = fp.read()
         model = {
@@ -170,10 +181,17 @@ class Char2Ir(BaseScrabble):
 
         new_srcids = []
         if self.query_strategy == 'confidence':
-            for srcid, score in score_dict.items():
+            for srcid, scores in score_dict.items():
                 # Normalize with length
-                score_dict[srcid] = np.log(score) / \
-                                    len(self.sentence_dict[srcid])
+                curr_score = 0
+                sentence_len = 0
+                for metadata_type, score in scores.items():
+                    sentence = self.sentence_dict[srcid][metadata_type]
+                    if not sentence:
+                        continue
+                    curr_score += np.log(score)
+                    sentence_len += len(sentence)
+                score_dict[srcid] = curr_score / sentence_len
             sorted_scores = sorted(score_dict.items(), key=itemgetter(1))
 
             # load word clusters not to select too similar samples.
@@ -181,6 +199,8 @@ class Char2Ir(BaseScrabble):
             new_srcid_cnt = 0
             for srcid, score in sorted_scores:
                 if srcid in self.target_srcids:
+                    if srcid in self.learning_srcids:
+                        continue
                     the_cid = None
                     for cid, cluster in cluster_dict.items():
                         if srcid in cluster:
@@ -244,25 +264,16 @@ class Char2Ir(BaseScrabble):
             tagger.open(crf_model_file)
 
             # Tagging sentences with tagger
-            for srcid, sentence in sentence_dict.items():
-                predicted = tagger.tag(self._calc_features(sentence))
-                predicted_dict[srcid] = predicted
-                score_dict[srcid] = tagger.probability(predicted)
-        elif crftype == 'crfsharp':
-            tagger = CRFSharp(base_dir='./temp',
-                              template='./model/scrabble.template',
-                              thread=thread_num,
-                              nbest=1,
-                              modelfile=crf_model_file,
-                              maxiter=crfsharp_maxiter
-                              )
-            srcids = list(sentence_dict.keys())
-            sentences = [sentence_dict[srcid] for srcid in srcids]
-            res = tagger.decode(sentences, srcids)
-            for srcid in srcids:
-                best_cand = res[srcid]['cands'][0]
-                predicted_dict[srcid] = best_cand['token_predict']
-                score_dict[srcid] = best_cand['prop']
+            for srcid, sentences in sentence_dict.items():
+                predicteds = {}
+                scores = {}
+                for metadata_type, sentence in sentences.items():
+                    predicted = tagger.tag(self._calc_features(sentence))
+                    score = tagger.probability(predicted)
+                    predicteds[metadata_type] = predicted
+                    scores[metadata_type] = score
+                predicted_dict[srcid] = predicteds
+                score_dict[srcid] = scores
         return predicted_dict, score_dict
 
     def _predict_and_proba(self, target_srcids):
@@ -299,21 +310,30 @@ class Char2Ir(BaseScrabble):
         pass
 
     def evaluate(self, preds):
-        acc = eval_func.sequential_accuracy(
-            [self.label_dict[srcid] for srcid in preds.keys()],
-            [preds[srcid] for srcid in preds.keys()])
-        pred = [preds[srcid] for srcid in preds.keys()]
-        true = [self.label_dict[srcid] for srcid in preds.keys()]
-        mlb = MultiLabelBinarizer()
-        mlb.fit(pred + true)
-        encoded_true = mlb.transform(true)
-        encoded_pred = mlb.transform(pred)
-        macro_f1 = f1_score(encoded_true, encoded_pred, average='macro')
-        f1 = f1_score(encoded_true, encoded_pred, average='weighted')
+        srcids = list(preds.keys())
+        pred_tags_list = [reduce(adder,
+                                 [preds[srcid][t]
+                                  for t in self.available_metadata_types])
+                          for srcid in srcids]
+        true_tags_list = [reduce(adder,
+                                 [self.label_dict[srcid][t]
+                                  for t in self.available_metadata_types])
+                          for srcid in srcids]
+        acc = eval_func.sequential_accuracy(true_tags_list,
+                                            pred_tags_list)
+
+        #pred = [preds[srcid] for srcid in preds.keys()]
+        #true = [self.label_dict[srcid] for srcid in preds.keys()]
+        #mlb = MultiLabelBinarizer()
+        #mlb.fit(pred + true)
+        #encoded_true = mlb.transform(true)
+        #encoded_pred = mlb.transform(pred)
+        #macro_f1 = f1_score(encoded_true, encoded_pred, average='macro')
+        #f1 = f1_score(encoded_true, encoded_pred, average='weighted')
         res = {
             'accuracy': acc,
-            'f1': f1,
-            'macro_f1': macro_f1
+            #'f1': f1,
+            #'macro_f1': macro_f1
         }
         return res
 

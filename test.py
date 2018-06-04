@@ -51,7 +51,19 @@ def find_points(tagsets):
         postfix = tagset.split('_')[-1]
         if postfix in POINT_POSTFIXES:
             points.append(tagset)
-    return set(points)
+    if not points:
+        return set()
+    point_lens = [len(point) for point in points]
+    best_point = points[point_lens.index(max(point_lens))]
+    final_points = set()
+    for point in points:
+        if point == best_point:
+            final_points.add(best_point)
+            continue
+        if not set(point.split('_')).issubset(set(best_point.split('_'))):
+            final_points.add(point)
+
+    return final_points
 
 def eval_tags_only(filename):
     with open(filename, 'r') as fp:
@@ -89,4 +101,4 @@ def eval_tags_only(filename):
 if __name__ == '__main__':
     #eval_tags_only('result/test_tagsonly_withoutunit.json')
     #eval_tags_only('result/test_tagsonly_withunit.json')
-    eval_tags_only('result/scrabble_history_ap_m.json')
+    eval_tags_only('result/scrabble_history_debug_ap_m.json')
