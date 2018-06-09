@@ -11,11 +11,11 @@ import pandas as pd
 from sklearn.preprocessing import LabelBinarizer, MultiLabelBinarizer
 from sklearn.metrics import precision_recall_fscore_support, f1_score
 
-from mongo_models import store_model, get_model, get_tags_mapping, \
+from .mongo_models import store_model, get_model, get_tags_mapping, \
     get_crf_results, store_result, get_entity_results
-from base_scrabble import BaseScrabble
-from common import *
-import eval_func
+from .base_scrabble import BaseScrabble
+from .common import *
+from . import eval_func
 
 curr_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
@@ -50,8 +50,8 @@ class Char2Ir(BaseScrabble):
             self.crftype = conf['crftype']
         else:
             self.crftype = 'crfsuite'
-        if 'query_strategy' in conf:
-            self.query_strategy = conf['query_strategy']
+        if 'crfqs' in conf:
+            self.query_strategy = conf['crfqs']
         else:
             self.query_strategy = 'confidence'
         if 'user_cluster_flag' in conf:

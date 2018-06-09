@@ -19,16 +19,14 @@ from sklearn.preprocessing import MultiLabelBinarizer
 from skmultilearn.problem_transform import LabelPowerset, ClassifierChain, \
     BinaryRelevance
 from sklearn.metrics import precision_recall_fscore_support
+from scipy.stats import entropy as get_entropy
 
-from keras.layers import Input, Dense
-from keras.models import Sequential
-from keras import regularizers
 
-from time_series_to_ir import TimeSeriesToIR
-from base_scrabble import BaseScrabble
-from common import *
-from hcc import StructuredClassifierChain
-from brick_parser import pointTagsetList        as  point_tagsets,\
+from .time_series_to_ir import TimeSeriesToIR
+from .base_scrabble import BaseScrabble
+from .common import *
+from .hcc import StructuredClassifierChain
+from .brick_parser import pointTagsetList        as  point_tagsets,\
                          locationTagsetList     as  location_tagsets,\
                          equipTagsetList        as  equip_tagsets,\
                          pointSubclassDict      as  point_subclass_dict,\
@@ -36,6 +34,9 @@ from brick_parser import pointTagsetList        as  point_tagsets,\
                          locationSubclassDict   as  location_subclass_dict,\
                          tagsetTree             as  tagset_tree
 
+from keras.layers import Input, Dense
+from keras.models import Sequential
+from keras import regularizers
 import tensorflow as tf
 from keras.backend.tensorflow_backend import set_session
 config = tf.ConfigProto()
@@ -155,7 +156,7 @@ class Ir2Tagsets(BaseScrabble):
         if 'tagset_classifier_type' in config:
             self.tagset_classifier_type = config['tagset_classifier_type']
         else:
-            self.tagset_classifier_type = 'StructuredCC'
+            self.tagset_classifier_type = 'MLP'
         if 'n_estimators' in config:
             self.n_estimators = config['n_estimators']
         else:
@@ -164,10 +165,10 @@ class Ir2Tagsets(BaseScrabble):
             self.vectorizer_type = config['vectorizer_type']
         else:
             self.vectorizer_type = 'tfidf'
-        if 'query_strategy' in config:
-            self.query_strategy = config['query_strategy']
+        if 'entqs' in config:
+            self.query_strategy = config['entqs']
         else:
-            self.query_strategy = 'phrase_util'
+            self.query_strategy = 'entropy'
         if 'use_known_tags' in config:
             self.use_known_tags = config['use_known_tags']
         else:
@@ -313,15 +314,21 @@ class Ir2Tagsets(BaseScrabble):
                                  )
         return todo_srcids
 
-    def ir2tagset_al_query_entropy(target_prob_mat,
+    def ir2tagset_al_query_entropy(self,
+                                   target_prob_mat,
+                                   #target_prob,
                                    target_srcids,
                                    learning_srcids,
                                    target_building,
                                    inc_num
                                    ):
+        assert len(target_srcids) == target_prob_mat.shape[0]
         entropies = get_entropy(target_prob_mat.T)
-        sorted_entropies = sorted([(target_srcids[i], ent) for i, ent
-                                   in enumerate(entropies)], key=itemgetter(1))
+        sorted_entropies = sorted([(srcid, ent) for srcid, ent
+                                   in zip(target_srcids, entropies)],
+                                  key=itemgetter(1))
+        #sorted_entropies = sorted([(target_srcids[i], ent) for i, ent
+        #                           in enumerate(entropies)], key=itemgetter(1))
         cluster_dict = get_cluster_dict(target_building)
         added_cids = []
         todo_srcids = []
@@ -351,10 +358,11 @@ class Ir2Tagsets(BaseScrabble):
                                 self.target_building,
                                 pred,
                                 sample_num)
-        elif query_strategy == 'entropy':
-            proba = self.predict_proba(self.target_srcids)
+        elif self.query_strategy == 'entropy':
+            _, _, prob_mat = self._predict_and_proba(self.target_srcids, True)
+            #proba = self.predict_proba(self.target_srcids)
             new_srcids = self.ir2tagset_al_query_entropy(
-                             proba,
+                             prob_mat,
                              self.target_srcids,
                              self.learning_srcids,
                              self.target_building,
@@ -381,7 +389,7 @@ class Ir2Tagsets(BaseScrabble):
             phrase_dict[srcid] += list(pred_tags)
         return phrase_dict
 
-    def _predict_and_proba(self, target_srcids):
+    def _predict_and_proba(self, target_srcids, full_prob=False):
         #return self.tagset_classifier, self.tagset_vectorizer, self.tagset_binarizer, self.ts2ir
         phrase_dict = {srcid: self.phrase_dict[srcid] 
                        for srcid in target_srcids}
@@ -412,20 +420,20 @@ class Ir2Tagsets(BaseScrabble):
         pred_tagsets_dict = dict()
         pred_certainty_dict = dict()
         pred_point_dict = dict()
-        for i, (srcid, pred) in enumerate(zip(target_srcids, pred_mat)):
-        #for i, (srcid, pred, point_pred) \
-                #in enumerate(zip(srcids, pred_mat, point_mat)):
+        for i, (srcid, pred, prob) in enumerate(zip(target_srcids,
+                                              pred_mat,
+                                              prob_mat)):
             pred_tagsets_dict[srcid] = self.tagset_binarizer.inverse_transform(\
                                             np.asarray([pred]))[0]
-            #pred_tagsets_dict[srcid] = list(binarizer.inverse_transform(pred)[0])
-            #pred_point_dict[srcid] = point_tagsets[point_pred]
-            #pred_vec = [prob[i][0] for prob in prob_mat]
-            #pred_certainty_dict[srcid] = pred_vec
-            pred_certainty_dict[srcid] = 0
+            pred_certainty_dict[srcid] = max(prob)
+            #pred_certainty_dict[srcid] = 0
         pred_certainty_dict = OrderedDict(sorted(pred_certainty_dict.items(), \
                                                  key=itemgetter(1), reverse=True))
         logging.info('Finished prediction')
-        return pred_tagsets_dict, pred_certainty_dict
+        if full_prob:
+            return pred_tagsets_dict, pred_certainty_dict, prob_mat
+        else:
+            return pred_tagsets_dict, pred_certainty_dict
 
     def predict(self, target_srcids=None):
         if not target_srcids:

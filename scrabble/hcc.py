@@ -5,7 +5,7 @@ import numpy as np
 from scipy.sparse import vstack, csr_matrix, hstack, issparse, coo_matrix,\
                          lil_matrix
 
-from common import *
+from .common import *
 
 class SingleProjectClassifier():
 

@@ -1,18 +1,10 @@
 import pdb
 from copy import deepcopy
 
-from ir2tagsets import Ir2Tagsets
-#from ir2tagsets2 import Ir2Tagsets
-#from char2ir_gpu import Char2Ir
-from char2ir import Char2Ir
-from base_scrabble import BaseScrabble
-from common import *
-
-gpu_flag = False
-if gpu_flag:
-    from char2ir_gpu import Char2Ir
-else:
-    from char2ir import Char2Ir
+from .ir2tagsets import Ir2Tagsets
+from .char2ir import Char2Ir
+from .base_scrabble import BaseScrabble
+from .common import *
 
 
 

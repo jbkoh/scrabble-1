@@ -1,6 +1,11 @@
 from mongoengine import *
+import json
 
-connect('oracle')
+with open('config/scrabble_config.json', 'r') as fp:
+    config = json.load(fp)
+    dbname = config['dbname']
+
+connect(dbname)
 
 
 class RawMetadata(Document):

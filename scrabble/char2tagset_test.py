@@ -15,8 +15,6 @@ args =argparser.parse_args()
 
 t0 = arrow.get()
 
-connect('oracle')
-
 #target_building = 'ap_m'
 #source_buildings = ['ap_m']
 #source_buildings = ['ebu3b', 'ap_m']
@@ -92,10 +90,9 @@ for i in range(0, 20):
     hist = {
         'pred': pred,
         'pred_tags': pred_tags,
-        'learning_srcids': list(set(deepcopy(scrabble.learning_srcids)))
+        'learning_srcids': len(list(set(scrabble.learning_srcids)))
     }
-    #history.append(hist)
-    #t3 = arrow.get()
+    t3 = arrow.get()
     res_obj.history.append(hist)
     res_obj.save()
     print('{0}th took {1}'.format(i, t3 - t2))

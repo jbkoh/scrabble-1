@@ -5,7 +5,8 @@ import time
 from joblib import Parallel, delayed
 import multiprocessing
 import matplotlib.pyplot as plt
-from feature_extractor import *
+import pdb
+
 from sklearn.metrics import classification_report
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import cross_val_score
@@ -15,14 +16,15 @@ from random import shuffle
 from sklearn.multiclass import *
 from sklearn.externals import joblib
 from sklearn.svm import *
-from randomizer import select_random_samples
 from sklearn import tree
 from sklearn.preprocessing import normalize
-from ploting_classification_report import plot_classification_report
 from sklearn.metrics import precision_recall_fscore_support
 import pickle
 import binascii
-import pdb
+
+from .feature_extractor import *
+from .randomizer import select_random_samples
+from .ploting_classification_report import plot_classification_report
 
 class TimeSeriesToIR:
 

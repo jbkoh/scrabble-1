@@ -14,7 +14,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from scipy.cluster.hierarchy import linkage
 import scipy.cluster.hierarchy as hier
 
-from data_model import *
+from .data_model import *
 
 POINT_POSTFIXES = ['sensor', 'setpoint', 'command', 'alarm', 'status', 'meter']
 
@@ -161,6 +161,9 @@ def make_phrase_dict(sentence_dict, token_label_dict, keep_alltokens=False):
     for srcid, token_labels_dict in token_label_dict.items():
         phrases = []
         for metadata_type, token_labels in token_labels_dict.items():
+            if srcid not in sentence_dict:
+                #pdb.set_trace()
+                pass
             sentence = sentence_dict[srcid][metadata_type]
             phrases += bilou_tagset_phraser(
                 sentence, token_labels, keep_alltokens)
@@ -349,7 +352,9 @@ def load_data(target_building, source_buildings, bacnettype_flag=False):
         building_tagsets_dict, known_tags_dict
 
 
-def calc_acc(true, pred, srcids, learning_srcids):
+def calc_acc_sub_tagsets(true, pred, srcids):
+    if not pred:
+        return None, None
     tot_acc = 0
     tot_point_acc = 0
     for srcid in srcids:
@@ -366,36 +371,59 @@ def calc_acc(true, pred, srcids, learning_srcids):
                 len(true_points.union(pred_points))
     tot_acc /= len(srcids)
     tot_point_acc /= len(srcids)
-    if tot_point_acc > 1:
-        pdb.set_trace()
+    return tot_acc, tot_point_acc
 
-    learning_acc = 0
-    learning_point_acc = 0
-    for srcid in learning_srcids:
-        true_set = set(true[srcid])
-        pred_set = set(pred[srcid])
-        learning_acc += len(true_set.intersection(pred_set)) /\
-            len(true_set.union(pred_set))
-        pred_points = find_points(pred_set)
-        true_points = find_points(true_set)
-        if not pred_points and not true_points:
-            learning_point_acc += 1
-        else:
-            learning_point_acc += len(true_points.intersection(pred_points)) /\
-                len(true_points.union(pred_points))
-    learning_acc /= len(learning_srcids)
-    learning_point_acc /= len(learning_srcids)
-    return tot_acc, tot_point_acc, learning_acc, learning_point_acc
+def calc_acc_sub_fullparsing(true, pred, srcids):
+    if not pred:
+        return None
+    tot_acc = 0
+    tot_point_acc = 0
+    for srcid in srcids:
+        true_set = true[srcid]
+        pred_set = pred[srcid]
+        sent_len = 0
+        curr_acc_cnt = 0
+        for key, labels in pred_set.items():
+            assert len(true_set[key]) == len(labels)
+            curr_acc_cnt = sum([t==p for t, p in zip(true_set[key], labels)])
+            sent_len += len(labels)
+        tot_acc += curr_acc_cnt / sent_len
+    tot_acc /= len(srcids)
+    return tot_acc
+
+
+def calc_acc(true, pred, true_crf, pred_crf, srcids, learning_srcids):
+    tot_acc, tot_point_acc = calc_acc_sub_tagsets(true, pred, srcids)
+    learning_acc, learning_point_acc = calc_acc_sub_tagsets(true,
+                                                            pred,
+                                                            learning_srcids)
+    crf_tot_acc = calc_acc_sub_fullparsing(true_crf, pred_crf, srcids)
+    crf_learning_acc = calc_acc_sub_fullparsing(true_crf,
+                                                pred_crf,
+                                                learning_srcids)
+
+    return crf_tot_acc, crf_learning_acc, \
+        tot_acc, tot_point_acc, \
+        learning_acc, learning_point_acc
 
 
 def print_status(scrabble, tot_acc, tot_point_acc,
-                 learning_acc, learning_point_acc):
+                 learning_acc, learning_point_acc,
+                 tot_crf_acc, learning_crf_acc):
     print('-----------------')
     print('srcids: {0}'.format(len(set(scrabble.learning_srcids))))
-    print('curr total accuracy: {0}'.format(tot_acc))
-    print('curr total point accuracy: {0}'.format(tot_point_acc))
-    print('curr learning accuracy: {0}'.format(learning_acc))
-    print('curr learning point accuracy: {0}'.format(learning_point_acc))
+    if tot_acc:
+        print('curr total accuracy: {0}'.format(tot_acc))
+    if tot_point_acc:
+        print('curr total point accuracy: {0}'.format(tot_point_acc))
+    if learning_acc:
+        print('curr learning accuracy: {0}'.format(learning_acc))
+    if learning_point_acc:
+        print('curr learning point accuracy: {0}'.format(learning_point_acc))
+    if tot_crf_acc:
+        print('curr CRF accuracy: {0}'.format(tot_crf_acc))
+    if learning_crf_acc:
+        print('curr learning CRF accuracy: {0}'.format(learning_crf_acc))
 
 def find_points(tagsets):
     points = []
@@ -428,6 +456,13 @@ argparser = argparse.ArgumentParser()
 argparser.register('type','bool',str2bool)
 argparser.register('type','slist', str2slist)
 argparser.register('type','ilist', str2ilist)
+argparser.add_argument('-type',
+                       type=str,
+                       help='Learning model among ["char2ir", "ir2tagsets", "scrabble"]',
+                       choices=['char2ir', 'ir2tagsets', 'scrabble'],
+                       dest='type',
+                       required=True
+                       )
 argparser.add_argument('-bl',
                        type='slist',
                        help='Learning source building name list',
@@ -494,7 +529,7 @@ argparser.add_argument('-crfqs',
 argparser.add_argument('-entqs',
                        type=str,
                        help='Query strategy for CRF',
-                       default='phrase_util',
+                       default='entropy',
                        dest = 'entqs')
 
 def get_result_obj(args):

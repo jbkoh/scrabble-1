@@ -11,10 +11,6 @@ from common import *
 
 t0 = arrow.get()
 
-connect('oracle')
-
-
-
 
 target_building = 'ap_m'
 #source_buildings = ['ap_m']
