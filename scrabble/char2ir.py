@@ -88,10 +88,12 @@ class Char2Ir(BaseScrabble):
 
             if not self.learning_srcids:
                 sample_srcid_list = select_random_samples(
-                                        building,
-                                        one_label_dict.keys(),
-                                        source_sample_num,
-                                        self.use_cluster_flag)
+                    building,
+                    one_label_dict.keys(),
+                    source_sample_num,
+                    self.use_cluster_flag,
+                    self.building_sentence_dict[building]
+                )
                 self.learning_srcids += sample_srcid_list
 
         # Construct Brick examples

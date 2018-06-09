@@ -23,7 +23,7 @@ import pickle
 import binascii
 
 from .feature_extractor import *
-from .randomizer import select_random_samples
+#from .randomizer import select_random_samples
 from .ploting_classification_report import plot_classification_report
 
 class TimeSeriesToIR:
@@ -73,7 +73,11 @@ class TimeSeriesToIR:
         else:
             X_train, X_test = list(), list()
             Y_train, Y_test = list(), list()
-            randomness = select_random_samples(cluster_filename=cluster_filepath, srcids=[x for x in srcids], n=num_train, use_cluster_flag=1)
+            randomness = select_random_samples(
+                cluster_filename=cluster_filepath,
+                srcids=[x for x in srcids],
+                n=num_train,
+                use_cluster_flag=1)
             for i in range(len(index)):
                 not_in_set = True
                 for j in range(len(randomness)):

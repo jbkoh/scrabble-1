@@ -1,11 +1,7 @@
 from mongoengine import *
-import json
+from .common import *
 
-with open('config/scrabble_config.json', 'r') as fp:
-    config = json.load(fp)
-    dbname = config['dbname']
-
-connect(dbname)
+connect('plastering')
 
 
 class RawMetadata(Document):

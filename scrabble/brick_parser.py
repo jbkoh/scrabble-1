@@ -38,35 +38,47 @@ equipPostfixes = ['system', 'dhws', 'tower', 'chiller', 'coil', 'fan',
 
 
 # TODO: Check if a file is parsed or not and then load it or execute below.
-parsed_files = ['brick/tags.json', \
-#                'brick/tagsets.json', \
-                'brick/equip_tagsets.json',\
-                'brick/location_tagsets.json',\
-                'brick/point_tagsets.json',\
-                'brick/location_subclass_dict.json',\
-                'brick/point_subclass_dict.json',\
-                'brick/equip_subclass_dict.json',\
-                'brick/tagset_tree.json',\
-               ]
+BRICK_BASE_DIR = str(os.environ['SCRABBLE_BRICK_DIR'])
+
+TAGS = BRICK_BASE_DIR + '/tags.json'
+EQUIP_TAGSETS = BRICK_BASE_DIR + '/equip_tagsets.json'
+LOC_TAGSETS = BRICK_BASE_DIR + '/location_tagsets.json'
+POINT_TAGSTS = BRICK_BASE_DIR + '/point_tagsets.json'
+LOC_SUBCLASSES = BRICK_BASE_DIR + '/location_subclass_dict.json'
+POINT_SUBCLASSES = BRICK_BASE_DIR + '/point_subclass_dict.json'
+EQUIP_SUBCLASSES = BRICK_BASE_DIR + '/equip_subclass_dict.json'
+TAGSET_TREE = BRICK_BASE_DIR + '/tagset_tree.json'
+
+parsed_files = [
+#                BRICK_BASE__DIR + '/tagsets.json', \
+    TAGS,
+    EQUIP_TAGSETS,
+    LOC_TAGSETS,
+    POINT_TAGSTS,
+    LOC_SUBCLASSES,
+    POINT_SUBCLASSES,
+    EQUIP_SUBCLASSES,
+    TAGSET_TREE,
+]
 if False not in [os.path.isfile(fn) for fn in parsed_files]:
 #if False:
-    with open('brick/tags.json', 'r') as fp:
+    with open(TAGS, 'r') as fp:
         tagList = json.load(fp)
 #    with open('brick/tagsets.json', 'r') as fp:
 #        tagsetList = json.load(fp)
-    with open('brick/equip_tagsets.json', 'r') as fp:
+    with open(EQUIP_TAGSETS, 'r') as fp:
         equipTagsetList = json.load(fp)
-    with open('brick/location_tagsets.json', 'r') as fp:
+    with open(LOC_TAGSETS, 'r') as fp:
         locationTagsetList = json.load(fp)
-    with open('brick/point_tagsets.json', 'r') as fp:
+    with open(POINT_TAGSTS, 'r') as fp:
         pointTagsetList = json.load(fp)
-    with open('brick/equip_subclass_dict.json', 'r') as fp:
+    with open(EQUIP_SUBCLASSES, 'r') as fp:
         equipSubclassDict = json.load(fp)
-    with open('brick/location_subclass_dict.json', 'r') as fp:
+    with open(LOC_SUBCLASSES, 'r') as fp:
         locationSubclassDict = json.load(fp)
-    with open('brick/point_subclass_dict.json', 'r') as fp:
+    with open(POINT_SUBCLASSES, 'r') as fp:
         pointSubclassDict = json.load(fp)
-    with open('brick/tagset_tree.json', 'r') as fp:
+    with open(TAGSET_TREE, 'r') as fp:
         tagsetTree = json.load(fp)
 else:
     def lcs_len(X, Y):

@@ -63,7 +63,7 @@ class BaseScrabble(object):
     def check_in(self, x, y):
         return x in y
 
-    def select_random_samples(
+    def select_random_samples_dep(
             self,
             building,
             srcids,
@@ -252,7 +252,7 @@ class BaseScrabble(object):
         return x + y
 
 
-    def get_random_srcids(self, 
+    def get_random_srcids_dep(self,
                           building_srcid_dict,
                           building_list, 
                           source_sample_num_list):
@@ -265,7 +265,7 @@ class BaseScrabble(object):
             # Select learning samples.
             # Learning samples can be chosen from the previous stage.
             # Or randomly selected.
-            sample_srcid_list = self.select_random_samples(
+            sample_srcid_list = self.select_random_samples_dep(
                 building,
                 #label_dict.keys(),
                 self.building_srcid_dict[building],

@@ -50,6 +50,7 @@ config = {
     'use_brick_flag': args.use_brick_flag,
     'crfqs': args.crfqs,
     'entqs': args.entqs,
+    'negative_flag': args.negative_flag
 }
 
 learning_srcid_file = 'metadata/test'
@@ -65,10 +66,12 @@ else:
     predefined_learning_srcids = []
     for building, source_sample_num in zip(source_buildings,
                                            source_sample_num_list):
-        predefined_learning_srcids += select_random_samples(building,
-                                                 building_tagsets_dict[building].keys(),
-                                                 source_sample_num,
-                                                 True)
+        predefined_learning_srcids += select_random_samples(
+            building,
+            building_tagsets_dict[building].keys(),
+            True,
+            source_sample_num,building_sentence_dict[building],
+        )
     with open(learning_srcid_file, 'w') as fp:
         json.dump(predefined_learning_srcids, fp)
 
@@ -92,9 +95,9 @@ elif framework_type == 'scrabble':
 
 framework.update_model([])
 history = []
-for i in range(0, 20):
+for i in range(0, args.iter_num):
     t2 = arrow.get()
-    new_srcids = framework.select_informative_samples(10)
+    new_srcids = framework.select_informative_samples(args.inc_num)
     framework.update_model(new_srcids)
     if framework_type == 'char2ir':
         pred_tags = framework.predict(target_srcids)

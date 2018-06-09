@@ -1,4 +1,5 @@
 import json
+import os
 import argparse
 import random
 from functools import reduce, partial
@@ -17,6 +18,8 @@ import scipy.cluster.hierarchy as hier
 from .data_model import *
 
 POINT_POSTFIXES = ['sensor', 'setpoint', 'command', 'alarm', 'status', 'meter']
+
+SCRABBLE_METADATA_DIR = str(os.environ['SCRABBLE_METADATA_DIR'])
 
 def elem2list(elem):
     if isinstance(elem, str):
@@ -49,19 +52,50 @@ def find_keys(tv, d, crit=lambda x,y:x==y):
 def check_in(x,y):
     return x in y
 
-def select_random_samples(building, \
-                          srcids, \
-                          n, \
-                          use_cluster_flag,\
+def joiner(s):
+    return ''.join(s)
+
+def get_word_clusters(sentence_dict):
+    srcids = list(sentence_dict.keys())
+    sentences = []
+    for srcid in srcids:
+        sentence = []
+        for metadata_type, sent in sentence_dict[srcid].items():
+            sentence.append(''.join(sent))
+        sentence = '\n'.join(sentence)
+        sentence = ' '.join(re.findall('[a-z]+', sentence))
+        sentences.append(sentence)
+    vect = TfidfVectorizer()
+    #vect = CountVectorizer()
+    bow = vect.fit_transform(sentences).toarray()
+    z = linkage(bow, metric='cityblock', method='complete')
+    dists = list(set(z[:,2]))
+    thresh = (dists[1] + dists[2]) /2
+    print("Threshold: ", thresh)
+    b = hier.fcluster(z,thresh, criterion='distance')
+    cluster_dict = defaultdict(list)
+
+    for srcid, cluster_id in zip(srcids, b):
+        cluster_dict[cluster_id].append(srcid)
+    return dict(cluster_dict)
+
+def select_random_samples(building,
+                          srcids,
+                          n,
+                          use_cluster_flag,
+                          sentence_dict=None,
                           token_type='justseparate',
                           reverse=True,
                           cluster_dict=None,
                           shuffle_flag=True,
                          ):
+    #if not cluster_dict:
+    #    cluster_filename = 'model/%s_word_clustering_%s.json' % (building, token_type)
+    #    with open(cluster_filename, 'r') as fp:
+    #        cluster_dict = json.load(fp)
+    assert sentence_dict or cluster_dict
     if not cluster_dict:
-        cluster_filename = 'model/%s_word_clustering_%s.json' % (building, token_type)
-        with open(cluster_filename, 'r') as fp:
-            cluster_dict = json.load(fp)
+        cluster_dict = get_word_clusters(sentence_dict)
 
     # Learning Sample Selection
     sample_srcids = set()
@@ -257,7 +291,7 @@ def adder(x, y):
     return x + y
 
 
-def get_random_srcids(building_list, source_sample_num_list):
+def get_random_srcids_dep(building_list, source_sample_num_list):
     srcids = list()
     for building, source_sample_num in zip(building_list, 
                                            source_sample_num_list): 
@@ -311,11 +345,12 @@ def load_data(target_building, source_buildings, bacnettype_flag=False):
     building_tagsets_dict = dict()
     known_tags_dict = defaultdict(list)
 
-    units = csv2json(pd.read_csv('metadata/unit_mapping.csv'),
+    units = csv2json(pd.read_csv(SCRABBLE_METADATA_DIR + '/unit_mapping.csv'),
                      'unit', 'word')
     units[None] = []
     units[''] = []
-    bacnettypes = csv2json(pd.read_csv('metadata/bacnettype_mapping.csv'),
+    bacnettypes = csv2json(pd.read_csv(SCRABBLE_METADATA_DIR +
+                                       '/bacnettype_mapping.csv'),
                            'bacnet_type_str', 'candidates')
     bacnettypes[None] = []
     bacnettypes[''] = []
@@ -336,14 +371,16 @@ def load_data(target_building, source_buildings, bacnettype_flag=False):
         sentence_dict = dict()
         for raw_point in RawMetadata.objects(building=building):
             srcid = raw_point.srcid
-            if srcid in true_tagsets:
-                metadata = raw_point['metadata']
-                sentences = {}
-                for clm in column_names:
-                    if clm in metadata:
-                        sentences[clm] = [c for c in metadata[clm].lower()]
-                sentence_dict[srcid]  = sentences
-            known_tags_dict[srcid] += units[metadata.get('BACnetUnit')]
+            #if srcid in true_tagsets:
+            metadata = raw_point['metadata']
+            sentences = {}
+            for clm in column_names:
+                if clm in metadata:
+                    sentences[clm] = [c for c in metadata[clm].lower()]
+            sentence_dict[srcid]  = sentences
+            bacnet_unit = metadata.get('BACnetUnit')
+            if bacnet_unit:
+                known_tags_dict[srcid] += units[bacnet_unit]
             if bacnettype_flag:
                 known_tags_dict[srcid] += bacnettypes[metadata.get('BACnetTypeStr')]
         building_sentence_dict[building] = sentence_dict
@@ -489,7 +526,7 @@ argparser.add_argument('-iter',
                        type=int,
                        help='Number of iteration for the given work',
                        dest='iter_num',
-                       default=1)
+                       default=20)
 argparser.add_argument('-nj',
                        type=int,
                        help='Number of processes for multiprocessing',
@@ -503,7 +540,7 @@ argparser.add_argument('-inc',
 argparser.add_argument('-ct',
                        type=str,
                        help='Tagset classifier type. one of RandomForest, \
-                          StructuredCC.',
+                          StructuredCC, MLP.',
                        dest='tagset_classifier_type',
                        default='MLP')
 argparser.add_argument('-ts',
@@ -529,7 +566,7 @@ argparser.add_argument('-crfqs',
 argparser.add_argument('-entqs',
                        type=str,
                        help='Query strategy for CRF',
-                       default='entropy',
+                       default='phrase_util',
                        dest = 'entqs')
 
 def get_result_obj(args):
