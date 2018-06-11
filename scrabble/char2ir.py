@@ -80,6 +80,7 @@ class Char2Ir(BaseScrabble):
     def _init_data(self):
         self.sentence_dict = {}
         self.label_dict = {}
+        self.building_cluster_dict = {}
         for building, source_sample_num in zip(self.source_buildings,
                                                self.source_sample_num_list):
             self.sentence_dict.update(self.building_sentence_dict[building])
@@ -95,6 +96,10 @@ class Char2Ir(BaseScrabble):
                     self.building_sentence_dict[building]
                 )
                 self.learning_srcids += sample_srcid_list
+
+            if building not in self.building_cluster_dict:
+                self.building_cluster_dict[building] = get_word_clusters(
+                    self.building_sentence_dict[building])
 
         # Construct Brick examples
         brick_sentence_dict = dict()
@@ -179,7 +184,8 @@ class Char2Ir(BaseScrabble):
         predicted_dict, score_dict = self._predict_func(model,
                                                         target_sentence_dict,
                                                         self.crftype)
-        cluster_dict = get_cluster_dict(self.target_building)
+        #cluster_dict = get_cluster_dict(self.target_building)
+        cluster_dict = self.building_cluster_dict[self.target_building]
 
         new_srcids = []
         if self.query_strategy == 'confidence':

@@ -34,8 +34,9 @@ from .brick_parser import pointTagsetList        as  point_tagsets,\
                          locationSubclassDict   as  location_subclass_dict,\
                          tagsetTree             as  tagset_tree
 
-from keras.layers import Input, Dense
+from keras.layers import Input, Dense, Dropout
 from keras.models import Sequential
+from keras.constraints import max_norm
 from keras import regularizers
 import tensorflow as tf
 from keras.backend.tensorflow_backend import set_session
@@ -197,6 +198,7 @@ class Ir2Tagsets(BaseScrabble):
         self.tagsets_dict = {}
         self.phrase_dict = {}
         self.point_dict = {}
+        self.building_cluster_dict = {}
 
         for building, source_sample_num in zip(self.source_buildings,
                                                self.source_sample_num_list):
@@ -222,6 +224,9 @@ class Ir2Tagsets(BaseScrabble):
                         point_tagset = tagset
                         break
                 self.point_dict[srcid] = point_tagset
+            if building not in self.building_cluster_dict:
+                self.building_cluster_dict[building] = get_word_clusters(
+                    self.building_sentence_dict[building])
 
         self.phrase_dict = make_phrase_dict(self.sentence_dict, 
                                             self.label_dict)
@@ -289,7 +294,8 @@ class Ir2Tagsets(BaseScrabble):
                                    for srcid, usage_rate
                                    in phrase_usage_dict.items()
                                    if usage_rate < threshold and srcid in test_srcids)
-        cluster_dict = get_cluster_dict(building)
+        #cluster_dict = get_cluster_dict(building)
+        cluster_dict = self.building_cluster_dict[building]
         todo_srcids = select_random_samples(building, \
                               list(todo_sentence_dict.keys()),
                               min(inc_num, len(todo_sentence_dict)), \
@@ -306,7 +312,8 @@ class Ir2Tagsets(BaseScrabble):
                                        for srcid, usage_rate
                                        in phrase_usage_dict.items()
                                        if srcid in test_srcids)
-            cluster_dict = get_cluster_dict(building)
+            #cluster_dict = get_cluster_dict(building)
+            cluster_dict = self.building_cluster_dict[building]
             todo_srcids = select_random_samples(building, \
                                   list(todo_sentence_dict.keys()),
                                   min(more_num, len(todo_sentence_dict)), \
@@ -329,9 +336,8 @@ class Ir2Tagsets(BaseScrabble):
         sorted_entropies = sorted([(srcid, ent) for srcid, ent
                                    in zip(target_srcids, entropies)],
                                   key=itemgetter(1))
-        #sorted_entropies = sorted([(target_srcids[i], ent) for i, ent
-        #                           in enumerate(entropies)], key=itemgetter(1))
-        cluster_dict = get_cluster_dict(target_building)
+        #cluster_dict = get_cluster_dict(target_building)
+        cluster_dict = self.building_cluster_dict[target_building]
         added_cids = []
         todo_srcids = []
         new_srcid_cnt = 0
@@ -962,15 +968,22 @@ class Ir2Tagsets(BaseScrabble):
             data_dim = learning_vect_doc.shape[1]
             output_classes = truth_mat.shape[1]
             model = Sequential()
-            model.add(Dense(64, input_shape=(data_dim,),
+            #model.add(Dropout(0.2,
+            #                  input_shape=(data_dim,),
+            #                  ))
+            model.add(Dense(64,
+                            input_shape=(data_dim,),
                             #bias_regularizer=regularizers.l1(0.0001),
                             #kernel_regularizer=regularizers.l1(0.001),
                             #activity_regularizer=regularizers.l1(0.001),
+                            #kernel_constraint=max_norm(3),
                             activation='relu'))
+            #model.add(Dropout(0.1))
             model.add(Dense(output_classes,
                             #bias_regularizer=regularizers.l1(0.0001),
                             #kernel_regularizer=regularizers.l1(0.0001),
                             #activity_regularizer=regularizers.l2(0.01),
+                            #kernel_constraint=max_norm(3),
                             activation='sigmoid'))
             model.compile(optimizer='rmsprop',
                           loss='binary_crossentropy',)
@@ -999,7 +1012,7 @@ class Ir2Tagsets(BaseScrabble):
             self.tagset_classifier.fit(learning_vect_doc,
                                        truth_mat,
                                        batch_size=128,
-                                       epochs=250,
+                                       epochs=400,
                                        verbose=False)
         else:
             self.tagset_classifier.fit(learning_vect_doc, truth_mat.toarray())

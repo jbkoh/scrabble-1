@@ -2,8 +2,8 @@ import arrow
 import pdb
 import json
 
-from tagsets2entities import Tagsets2Entities
-from data_model import *
+from .tagsets2entities import Tagsets2Entities
+from .data_model import *
 
 t0 = arrow.get()
 connect('oracle')

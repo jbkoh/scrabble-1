@@ -4,6 +4,7 @@ from copy import deepcopy
 from .ir2tagsets import Ir2Tagsets
 from .char2ir import Char2Ir
 from .base_scrabble import BaseScrabble
+from .tagsets2entities import Tagsets2Entities
 from .common import *
 
 
@@ -60,6 +61,17 @@ class Scrabble(BaseScrabble):
                                      known_tags_dict=known_tags_dict,
                                      config=config
                                      )
+
+        self.tagsets2entities = Tagsets2Entities(target_building,
+                                                 target_srcids,
+                                                 building_label_dict,
+                                                 building_sentence_dict,
+                                                 building_tagsets_dict,
+                                                 source_buildings,
+                                                 source_sample_num_list,
+                                                 deepcopy(self.learning_srcids),
+                                                 config=config
+                                                 )
 
     def init_data(self):
         self.sentence_dict = {}

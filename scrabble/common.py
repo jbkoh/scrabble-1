@@ -19,7 +19,9 @@ from .data_model import *
 
 POINT_POSTFIXES = ['sensor', 'setpoint', 'command', 'alarm', 'status', 'meter']
 
-SCRABBLE_METADATA_DIR = str(os.environ['SCRABBLE_METADATA_DIR'])
+#SCRABBLE_METADATA_DIR = str(os.environ['SCRABBLE_METADATA_DIR'])
+SCRABBLE_METADATA_DIR = os.path.dirname(os.path.realpath(__file__)) + \
+    '/../metadata'
 
 def elem2list(elem):
     if isinstance(elem, str):
@@ -496,7 +498,7 @@ argparser.register('type','ilist', str2ilist)
 argparser.add_argument('-type',
                        type=str,
                        help='Learning model among ["char2ir", "ir2tagsets", "scrabble"]',
-                       choices=['char2ir', 'ir2tagsets', 'scrabble'],
+                       choices=['char2ir', 'ir2tagsets', 'scrabble', 'tagsets2entities'],
                        dest='type',
                        required=True
                        )

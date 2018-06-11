@@ -38,16 +38,18 @@ equipPostfixes = ['system', 'dhws', 'tower', 'chiller', 'coil', 'fan',
 
 
 # TODO: Check if a file is parsed or not and then load it or execute below.
-BRICK_BASE_DIR = str(os.environ['SCRABBLE_BRICK_DIR'])
+dir_path = os.path.dirname(os.path.realpath(__file__))
+dir_path += '/../brick/'
+#BRICK_BASE_DIR = str(os.environ['SCRABBLE_BRICK_DIR'])
 
-TAGS = BRICK_BASE_DIR + '/tags.json'
-EQUIP_TAGSETS = BRICK_BASE_DIR + '/equip_tagsets.json'
-LOC_TAGSETS = BRICK_BASE_DIR + '/location_tagsets.json'
-POINT_TAGSTS = BRICK_BASE_DIR + '/point_tagsets.json'
-LOC_SUBCLASSES = BRICK_BASE_DIR + '/location_subclass_dict.json'
-POINT_SUBCLASSES = BRICK_BASE_DIR + '/point_subclass_dict.json'
-EQUIP_SUBCLASSES = BRICK_BASE_DIR + '/equip_subclass_dict.json'
-TAGSET_TREE = BRICK_BASE_DIR + '/tagset_tree.json'
+TAGS = dir_path + '/tags.json'
+EQUIP_TAGSETS = dir_path + '/equip_tagsets.json'
+LOC_TAGSETS = dir_path + '/location_tagsets.json'
+POINT_TAGSTS = dir_path + '/point_tagsets.json'
+LOC_SUBCLASSES = dir_path + '/location_subclass_dict.json'
+POINT_SUBCLASSES = dir_path + '/point_subclass_dict.json'
+EQUIP_SUBCLASSES = dir_path + '/equip_subclass_dict.json'
+TAGSET_TREE = dir_path + '/tagset_tree.json'
 
 parsed_files = [
 #                BRICK_BASE__DIR + '/tagsets.json', \

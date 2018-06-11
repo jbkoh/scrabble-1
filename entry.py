@@ -1,5 +1,6 @@
 import arrow
 import pdb
+import sys
 import json
 from copy import deepcopy
 import os
@@ -70,7 +71,8 @@ else:
             building,
             building_tagsets_dict[building].keys(),
             True,
-            source_sample_num,building_sentence_dict[building],
+            source_sample_num,
+            building_sentence_dict[building],
         )
     with open(learning_srcid_file, 'w') as fp:
         json.dump(predefined_learning_srcids, fp)
@@ -90,6 +92,11 @@ if framework_type == 'char2ir':
     framework = scrabble.char2ir
 elif framework_type == 'ir2tagsets':
     framework = scrabble.ir2tagsets
+elif framework_type == 'tagsets2entities':
+    framework = scrabble.tagsets2entities
+    framework.graphize(None)
+    framework.map_tags_tagsets()
+    sys.exit(1)
 elif framework_type == 'scrabble':
     framework = scrabble
 

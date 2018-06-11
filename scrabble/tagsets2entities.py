@@ -1,4 +1,5 @@
 import os
+import pdb
 from uuid import uuid4
 from operator import itemgetter
 from pathlib import Path
@@ -12,10 +13,10 @@ import arrow
 import numpy as np
 import pandas as pd
 
-from mongo_models import store_model, get_model, get_tags_mapping, \
+from .mongo_models import store_model, get_model, get_tags_mapping, \
     get_crf_results, store_result, get_entity_results
-from base_scrabble import BaseScrabble
-from common import *
+from .base_scrabble import BaseScrabble
+from .common import *
 
 curr_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
@@ -43,11 +44,11 @@ class Tagsets2Entities(BaseScrabble):
                  target_srcids,
                  building_label_dict,
                  building_sentence_dict,
-                 building_tagsets_dict,
+                 building_tagsets_dict={},
                  source_buildings=[],
                  source_sample_num_list=[],
                  learning_srcids=[],
-                 conf={}
+                 config={}
                  ):
         super(Tagsets2Entities, self).__init__(
             target_building,
@@ -58,19 +59,19 @@ class Tagsets2Entities(BaseScrabble):
             source_buildings,
             source_sample_num_list,
             learning_srcids,
-            conf)
+            config)
         self.model_uuid = None
 
-        if 'crftype' in conf:
-            self.crftype = conf['crftype']
+        if 'crftype' in config:
+            self.crftype = config['crftype']
         else:
             self.crftype = 'crfsuite'
-        if 'query_strategy' in conf:
-            self.query_strategy = conf['query_strategy']
+        if 'query_strategy' in config:
+            self.query_strategy = config['query_strategy']
         else:
-            self.query_strategy = 'confidence'
-        if 'user_cluster_flag' in conf:
-            self.use_cluster_flag = conf['use_cluster_flag']
+            self.query_strategy = 'configidence'
+        if 'user_cluster_flag' in config:
+            self.use_cluster_flag = config['use_cluster_flag']
         else:
             self.use_cluster_flag = True
 
@@ -78,8 +79,8 @@ class Tagsets2Entities(BaseScrabble):
 
         # Note: Hardcode to disable use_brick_flag
         """
-        if 'use_brick_flag' in conf:
-            self.use_brick_flag = conf['use_brick_flag']
+        if 'use_brick_flag' in config:
+            self.use_brick_flag = config['use_brick_flag']
         else:
             self.use_brick_flag = False  # Temporarily disable it
         """
@@ -130,51 +131,60 @@ class Tagsets2Entities(BaseScrabble):
         entities_dict = {}
         for srcid in self.target_srcids:
             tagsets = self.tagsets_dict[srcid]
-            tags = self.label_dict[srcid]
-            tags = [tag[2:] if len(tag)>1 else tag for tag in tags]
-            sentence = self.sentence_dict[srcid]
-            used_indices = []
+            tags_dict = self.label_dict[srcid]
             entities = {}
             for tagset in tagsets:
-                found_indices = [i for i, tag in enumerate(tags)
-                                 if check_tag_in_tagset(tag, tagset)]
-                for i, tag in enumerate(tags):
-                    if tag == 'leftidentifier':
-                        """
-                        prev_tag = 'O'
-                        prev_idx = i
-                        while prev_tag == 'O':
-                            prev_idx += -1
-                            prev_tag = tags[prev_idx]
-                        if prev_idx in found_indices:
-                            found_indices.append(i)
-                        """
-                        prev_tag = None
-                        for prev_idx in reversed(range(0, i)):
-                            prev_tag = tags[prev_idx]
-                            if prev_tag != 'O': #TODO: This shouldn't be leftidentifier or rightidentifier either
-                                break
-                        if prev_tag and prev_idx in found_indices:
-                            found_indices.append(i)
-                for i, tag in reversed(list(enumerate(tags))):
-                    if tag == 'rightidentifier':
-                        next_tag = None
-                        for next_idx in range(i+1, len(tags)):
-                            next_tag = tags[next_idx]
-                            if next_tag != 'O':
-                                break
-                        if next_tag and next_idx in found_indices:
-                            found_indices.append(i)
-                found_indices = sorted(found_indices)
-                matched_word = ''.join([sentence[i] for i
-                                        in sorted(found_indices)])
-                used_indices += found_indices
-                entities[tagset] = matched_word
+                matched_words = []
+                for metadata_type, tags in tags_dict.items():
+                    sentence = self.sentence_dict[srcid][metadata_type]
+                    tags = [tag[2:] if len(tag)>1 else tag for tag in tags]
+                    used_indices = []
+                    found_indices = [i for i, tag in enumerate(tags)
+                                     if check_tag_in_tagset(tag, tagset)]
+                    for i, tag in enumerate(tags):
+                        if tag == 'leftidentifier':
+                            """
+                            prev_tag = 'O'
+                            prev_idx = i
+                            while prev_tag == 'O':
+                                prev_idx += -1
+                                prev_tag = tags[prev_idx]
+                            if prev_idx in found_indices:
+                                found_indices.append(i)
+                            """
+                            prev_tag = None
+                            for prev_idx in reversed(range(0, i)):
+                                prev_tag = tags[prev_idx]
+                                if prev_tag != 'O': #TODO: This shouldn't be leftidentifier or rightidentifier either
+                                    break
+                            if prev_tag and prev_idx in found_indices:
+                                found_indices.append(i)
+                    for i, tag in reversed(list(enumerate(tags))):
+                        if tag == 'rightidentifier':
+                            next_tag = None
+                            for next_idx in range(i+1, len(tags)):
+                                next_tag = tags[next_idx]
+                                if next_tag != 'O':
+                                    break
+                            if next_tag and next_idx in found_indices:
+                                found_indices.append(i)
+                    found_indices = sorted(found_indices)
+                    matched_word = ''.join([sentence[i] for i
+                                            in sorted(found_indices)])
+                    if matched_word:
+                        matched_words += [matched_word]
+                    used_indices += found_indices
+                entities[tagset] = '_'.join(matched_words)
             entities_dict[srcid] = entities
             pp.pprint(entities)
         with open('test.json', 'w') as fp:
             json.dump(entities_dict, fp, indent=2)
 
+    def graphize(self, entities_dict):
+        dir_path = os.path.dirname(os.path.realpath(__file__))
+        rel_file = dir_path + '/../metadata/relationship_prior.json'
+        with open(rel_file, 'r') as fp:
+            rel_prior = json.load(fp)
 
 if __name__ == '__main__':
     t2e = Tagsets2Entities()
