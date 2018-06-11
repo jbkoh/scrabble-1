@@ -5,6 +5,7 @@ from operator import itemgetter
 from pathlib import Path
 from collections import defaultdict
 import pprint
+from rdflib import Graph, Namespace, RDF, URIRef
 pp = pprint.PrettyPrinter(indent=4)
 
 import pycrfsuite
@@ -17,6 +18,10 @@ from .mongo_models import store_model, get_model, get_tags_mapping, \
     get_crf_results, store_result, get_entity_results
 from .base_scrabble import BaseScrabble
 from .common import *
+
+BRICK_VERSION = '1.0.1'
+BASE = Namespace('http://example.com#')
+BRICK = Namespace('https://brickschema.org/schema/{0}/Brick#'.format(BRICK_VERSION))
 
 curr_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
@@ -179,12 +184,42 @@ class Tagsets2Entities(BaseScrabble):
             pp.pprint(entities)
         with open('test.json', 'w') as fp:
             json.dump(entities_dict, fp, indent=2)
+        return entities_dict
+
+    def _init_graph(self):
+        return Graph()
+
+    def _make_instance_tuple(self, srcid, pred_point):
+        return (URIRef(BASE + srcid), RDF.type, BRICK[pred_point])
+
+    def _add_pred_point_result(self, pred_g, pred_confidences, srcid,
+                               pred_point, pred_prob):
+        triple = self._make_instance_tuple(srcid, pred_point)
+        pred_confidences[triple] = pred_prob
+        pred_g.add(triple)
+        return pred_g, pred_confidences
 
     def graphize(self, entities_dict):
         dir_path = os.path.dirname(os.path.realpath(__file__))
         rel_file = dir_path + '/../metadata/relationship_prior.json'
         with open(rel_file, 'r') as fp:
             rel_prior = json.load(fp)
+        pred_g = self._init_graph()
+        pred_confidences = {}
+        for srcid, entities in entities_dict.items():
+            tagsets = list(entities.keys())
+            point_tagsets = list(find_points(tagsets))
+            for point_tagset in point_tagsets:
+                self._add_pred_point_result(pred_g, pred_confidences,
+                                            srcid, point_tagset, 1)
+            for tagset in tagsets:
+                if tagset in point_tagsets:
+                    continue
+                # TODO: Below
+                pass
+
+        pred_g.serialize('test.ttl', format='turtle')
+        return pred_g
 
 if __name__ == '__main__':
     t2e = Tagsets2Entities()

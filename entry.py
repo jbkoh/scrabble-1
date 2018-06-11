@@ -94,8 +94,8 @@ elif framework_type == 'ir2tagsets':
     framework = scrabble.ir2tagsets
 elif framework_type == 'tagsets2entities':
     framework = scrabble.tagsets2entities
-    framework.graphize(None)
-    framework.map_tags_tagsets()
+    entities_dict = framework.map_tags_tagsets()
+    framework.graphize(entities_dict)
     sys.exit(1)
 elif framework_type == 'scrabble':
     framework = scrabble
