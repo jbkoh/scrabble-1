@@ -30,4 +30,5 @@ class ResultHistory(Document):
     crfqs = StringField()
     tagset_classifier_type = StringField()
     postfix = StringField()
+    task = StringField()
 

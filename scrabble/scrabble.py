@@ -39,6 +39,10 @@ class Scrabble(BaseScrabble):
             self.use_cluster_flag = config['use_cluster_flag']
         else:
             self.use_cluster_flag = True
+        if 'graphize' in config:
+            self.graphize = config['graphize']
+        else:
+            self.graphize = False
 
         self.init_data()
         self.char2ir = Char2Ir(target_building,
@@ -139,7 +143,11 @@ class Scrabble(BaseScrabble):
                    for srcid in target_srcids}
         self.ir2tagsets.update_phrases(phrases)
         pred = self.ir2tagsets.predict(target_srcids)
-        return pred
+        if self.graphize:
+            pred_g = self.tagsets2entities.graphize(pred)
+            return pred_g
+        else:
+            return pred
 
     def predict_proba(self, target_srcids=None):
         if not target_srcids:

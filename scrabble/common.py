@@ -495,11 +495,11 @@ argparser = argparse.ArgumentParser()
 argparser.register('type','bool',str2bool)
 argparser.register('type','slist', str2slist)
 argparser.register('type','ilist', str2ilist)
-argparser.add_argument('-type',
+argparser.add_argument('-task',
                        type=str,
                        help='Learning model among ["char2ir", "ir2tagsets", "scrabble"]',
                        choices=['char2ir', 'ir2tagsets', 'scrabble', 'tagsets2entities'],
-                       dest='type',
+                       dest='task',
                        required=True
                        )
 argparser.add_argument('-bl',
@@ -570,20 +570,30 @@ argparser.add_argument('-entqs',
                        help='Query strategy for CRF',
                        default='phrase_util',
                        dest = 'entqs')
+argparser.add_argument('-g',
+                       type='bool',
+                       help='Graphize the result or not',
+                       dest='graphize',
+                       default=False)
 
-def get_result_obj(args):
-    query_keys = ['use_brick_flag',
-                  'use_known_tags',
-                  'sample_num_list',
-                  'target_building',
-                  'negative_flag',
-                  'entqs',
-                  'crfqs',
-                  'tagset_classifier_type',
-                  'postfix'
-                  ]
+def get_result_obj(args, clean_history):
+    query_keys = [
+        'use_brick_flag',
+        'use_known_tags',
+        'sample_num_list',
+        'target_building',
+        'negative_flag',
+        'entqs',
+        'crfqs',
+        'tagset_classifier_type',
+        'postfix',
+        'task',
+    ]
     query = {k: getattr(args, k) for k in query_keys}
     res_obj = ResultHistory.objects(**query).upsert_one(**query)
-    res_obj.history = []
+    #res_obj = ResultHistory.objects(**query)\
+    #    .update_one(**query, upsert=True)
+    if not res_obj.history or clean_history:
+        res_obj.history = []
     res_obj.save()
     return res_obj

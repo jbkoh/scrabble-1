@@ -11,25 +11,16 @@ from scrabble.data_model import *
 from scrabble.common import *
 
 
-
-
 args =argparser.parse_args()
-
 
 t0 = arrow.get()
 
-#target_building = 'ap_m'
-#source_buildings = ['ap_m']
-#source_buildings = ['ebu3b', 'ap_m']
-#source_sample_num_list = [200, 10]
-#source_sample_num_list = [200, 10]
-
-res_obj = get_result_obj(args)
+res_obj = get_result_obj(args, True)
 
 source_buildings = args.source_building_list
 target_building = args.target_building
 source_sample_num_list = args.sample_num_list
-framework_type = args.type
+framework_type = args.task
 
 building_sentence_dict, target_srcids, building_label_dict,\
     building_tagsets_dict, known_tags_dict = load_data(target_building,
@@ -102,6 +93,7 @@ elif framework_type == 'scrabble':
 
 framework.update_model([])
 history = []
+curr_learning_srcids = []
 for i in range(0, args.iter_num):
     t2 = arrow.get()
     new_srcids = framework.select_informative_samples(args.inc_num)
@@ -127,11 +119,15 @@ for i in range(0, args.iter_num):
     print_status(framework, tot_acc, tot_point_acc,
                  learning_acc, learning_point_acc,
                  tot_crf_acc, learning_crf_acc)
+    new_srcids = [srcid for srcid in set(framework.learning_srcids)
+                  if srcid not in curr_learning_srcids]
     hist = {
         'pred': pred,
         'pred_tags': pred_tags,
+        'new_srcids': new_srcids,
         'learning_srcids': len(list(set(framework.learning_srcids)))
     }
+    curr_learning_srcids = list(set(framework.learning_srcids))
     t3 = arrow.get()
     res_obj.history.append(hist)
     res_obj.save()

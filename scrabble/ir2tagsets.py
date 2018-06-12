@@ -978,7 +978,15 @@ class Ir2Tagsets(BaseScrabble):
                             #activity_regularizer=regularizers.l1(0.001),
                             #kernel_constraint=max_norm(3),
                             activation='relu'))
-            #model.add(Dropout(0.1))
+            model.add(Dropout(0.1))
+            model.add(Dense(64,
+                            input_shape=(data_dim,),
+                            #bias_regularizer=regularizers.l1(0.0001),
+                            #kernel_regularizer=regularizers.l1(0.001),
+                            #activity_regularizer=regularizers.l1(0.001),
+                            kernel_constraint=max_norm(3),
+                            activation='relu'))
+            model.add(Dropout(0.1))
             model.add(Dense(output_classes,
                             #bias_regularizer=regularizers.l1(0.0001),
                             #kernel_regularizer=regularizers.l1(0.0001),
