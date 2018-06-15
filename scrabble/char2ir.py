@@ -240,14 +240,18 @@ class Char2Ir(BaseScrabble):
                 features['BOS'] = 1.0
             else:
                 features['-1:word.lower=' + sentence[i - 1].lower()] = 1.0
-            if i in [0, 1]:
+
+            if i  == 0:
+                pass
+            elif i  == 1:
                 features['SECOND'] = 1.0
             else:
                 features['-2:word.lower=' + sentence[i - 2].lower()] = 1.0
-            # if i<len(sentence)-1:
-            #    features['+1:word.lower='+sentence[i+1].lower()] = 1.0
-            # else:
-            #    features['EOS'] = 1.0
+
+            if i<len(sentence)-1:
+                features['+1:word.lower='+sentence[i+1].lower()] = 1.0
+            else:
+                features['EOS'] = 1.0
             sentenceFeatures.append(features)
         return sentenceFeatures
 
