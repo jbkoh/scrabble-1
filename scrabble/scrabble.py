@@ -1,8 +1,6 @@
 import pdb
 from copy import deepcopy
 
-from .ir2tagsets import Ir2Tagsets
-from .char2ir import Char2Ir
 from .base_scrabble import BaseScrabble
 from .tagsets2entities import Tagsets2Entities
 from .common import *
@@ -33,6 +31,8 @@ class Scrabble(BaseScrabble):
                  source_sample_num_list,
                  deepcopy(learning_srcids),
                  config)
+        from .ir2tagsets import Ir2Tagsets
+        from .char2ir import Char2Ir
         self.target_srcids = target_srcids
         self.known_tags_dict = known_tags_dict
         if 'use_cluster_flag' in config:

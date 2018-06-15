@@ -90,6 +90,7 @@ def select_random_samples(building,
                           reverse=True,
                           cluster_dict=None,
                           shuffle_flag=True,
+                          unique_clusters_flag=False,
                          ):
     #if not cluster_dict:
     #    cluster_filename = 'model/%s_word_clustering_%s.json' % (building, token_type)
@@ -121,6 +122,8 @@ def select_random_samples(building,
                             random.choice(list(valid_srcid_list)))
                 if len(sample_srcids) >= n:
                     break
+            if unique_clusters_flag:
+                break
     else:
         sample_srcids = random.sample(srcids, n)
     return list(sample_srcids)
@@ -470,6 +473,8 @@ def find_points(tagsets):
         postfix = tagset.split('_')[-1]
         if postfix in POINT_POSTFIXES:
             points.append(tagset)
+    if not points:
+        points = ['none']
     return set(points)
 
 
@@ -576,10 +581,15 @@ argparser.add_argument('-g',
                        dest='graphize',
                        default=False)
 
-def get_result_obj(args, clean_history):
+def query_result(query):
+    res = ResultHistory.objects(**query).first().to_mongo()
+    return res
+
+def get_result_obj(params, clean_history):
     query_keys = [
         'use_brick_flag',
         'use_known_tags',
+        'source_building_list',
         'sample_num_list',
         'target_building',
         'negative_flag',
@@ -589,7 +599,7 @@ def get_result_obj(args, clean_history):
         'postfix',
         'task',
     ]
-    query = {k: getattr(args, k) for k in query_keys}
+    query = {k: getattr(params, k) for k in query_keys}
     res_obj = ResultHistory.objects(**query).upsert_one(**query)
     #res_obj = ResultHistory.objects(**query)\
     #    .update_one(**query, upsert=True)

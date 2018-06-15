@@ -32,7 +32,7 @@ class Char2Ir(BaseScrabble):
                  source_buildings=[],
                  source_sample_num_list=[],
                  learning_srcids=[],
-                 conf={}
+                 config={}
                  ):
         super(Char2Ir, self).__init__(
                  target_building,
@@ -43,24 +43,24 @@ class Char2Ir(BaseScrabble):
                  source_buildings,
                  source_sample_num_list,
                  learning_srcids,
-                 conf)
+                 config)
         self.model_uuid = None
 
-        if 'crftype' in conf:
-            self.crftype = conf['crftype']
+        if 'crftype' in config:
+            self.crftype = config['crftype']
         else:
             self.crftype = 'crfsuite'
-        if 'crfqs' in conf:
-            self.query_strategy = conf['crfqs']
+        if 'crfqs' in config:
+            self.query_strategy = config['crfqs']
         else:
             self.query_strategy = 'confidence'
-        if 'user_cluster_flag' in conf:
-            self.use_cluster_flag = conf['use_cluster_flag']
+        if 'user_cluster_flag' in config:
+            self.use_cluster_flag = config['use_cluster_flag']
         else:
             self.use_cluster_flag = True
 
-        if 'available_metadata_types' in conf:
-            self.available_metadata_types = conf['available_metadata_types']
+        if 'available_metadata_types' in config:
+            self.available_metadata_types = config['available_metadata_types']
         else:
             self.available_metadata_types = ['VendorGivenName',
                                              'BACnetDescription',
@@ -69,8 +69,8 @@ class Char2Ir(BaseScrabble):
 
         # Note: Hardcode to disable use_brick_flag
         """
-        if 'use_brick_flag' in conf:
-            self.use_brick_flag = conf['use_brick_flag']
+        if 'use_brick_flag' in config:
+            self.use_brick_flag = config['use_brick_flag']
         else:
             self.use_brick_flag = False  # Temporarily disable it
         """

@@ -6,9 +6,9 @@ from copy import deepcopy
 import os
 import random
 
-from scrabble import Scrabble
 from scrabble.data_model import *
 from scrabble.common import *
+from scrabble.char2ir import Char2Ir
 
 
 args =argparser.parse_args()
@@ -68,27 +68,61 @@ else:
     with open(learning_srcid_file, 'w') as fp:
         json.dump(predefined_learning_srcids, fp)
 
-scrabble = Scrabble(target_building,
-                    target_srcids,
-                    building_label_dict,
-                    building_sentence_dict,
-                    building_tagsets_dict,
-                    source_buildings,
-                    source_sample_num_list,
-                    known_tags_dict,
-                    config=config,
-                    learning_srcids=predefined_learning_srcids
-                    )
+
 if framework_type == 'char2ir':
-    framework = scrabble.char2ir
+    framework = Char2Ir(target_building,
+                        target_srcids,
+                        building_label_dict,
+                        building_sentence_dict,
+                        source_buildings,
+                        source_sample_num_list,
+                        learning_srcids=predefined_learning_srcids,
+                        config=config
+                        )
 elif framework_type == 'ir2tagsets':
+    from scrabble import Scrabble
+    scrabble = Scrabble(target_building,
+                        target_srcids,
+                        building_label_dict,
+                        building_sentence_dict,
+                        building_tagsets_dict,
+                        source_buildings,
+                        source_sample_num_list,
+                        known_tags_dict,
+                        config=config,
+                        learning_srcids=predefined_learning_srcids
+                        )
     framework = scrabble.ir2tagsets
 elif framework_type == 'tagsets2entities':
+    from scrabble import Scrabble
+    scrabble = Scrabble(target_building,
+                        target_srcids,
+                        building_label_dict,
+                        building_sentence_dict,
+                        building_tagsets_dict,
+                        source_buildings,
+                        source_sample_num_list,
+                        known_tags_dict,
+                        config=config,
+                        learning_srcids=predefined_learning_srcids
+                        )
     framework = scrabble.tagsets2entities
     entities_dict = framework.map_tags_tagsets()
     framework.graphize(entities_dict)
     sys.exit(1)
 elif framework_type == 'scrabble':
+    from scrabble import Scrabble
+    scrabble = Scrabble(target_building,
+                        target_srcids,
+                        building_label_dict,
+                        building_sentence_dict,
+                        building_tagsets_dict,
+                        source_buildings,
+                        source_sample_num_list,
+                        known_tags_dict,
+                        config=config,
+                        learning_srcids=predefined_learning_srcids
+                        )
     framework = scrabble
 
 framework.update_model([])
@@ -99,14 +133,15 @@ for i in range(0, args.iter_num):
     new_srcids = framework.select_informative_samples(args.inc_num)
     framework.update_model(new_srcids)
     if framework_type == 'char2ir':
-        pred_tags = framework.predict(target_srcids)
+        pred_tags = framework.predict(target_srcids + framework.learning_srcids)
         pred = None
     elif framework_type == 'ir2tagsets':
         pred = framework.predict(target_srcids + scrabble.learning_srcids)
         pred_tags = None
-    elif framework_type == 'scrabbe':
+    elif framework_type == 'scrabble':
         pred = framework.predict(target_srcids + scrabble.learning_srcids)
-        pred_tags = framework.predict_tags(target_srcids)
+        pred_tags = None
+        #pred_tags = framework.predict_tags(target_srcids)
 
     tot_crf_acc, learning_crf_acc, tot_acc, tot_point_acc,\
         learning_acc, learning_point_acc = calc_acc(
@@ -121,12 +156,19 @@ for i in range(0, args.iter_num):
                  tot_crf_acc, learning_crf_acc)
     new_srcids = [srcid for srcid in set(framework.learning_srcids)
                   if srcid not in curr_learning_srcids]
-    hist = {
-        'pred': pred,
-        'pred_tags': pred_tags,
-        'new_srcids': new_srcids,
-        'learning_srcids': len(list(set(framework.learning_srcids)))
-    }
+    if framework_type == 'char2ir':
+        hist = {
+            'acc': tot_crf_acc,
+            'new_srcids': new_srcids,
+            'learning_srcids': len(list(set(framework.learning_srcids)))
+        }
+    else:
+        hist = {
+            'pred': pred,
+            'pred_tags': pred_tags,
+            'new_srcids': new_srcids,
+            'learning_srcids': len(list(set(framework.learning_srcids)))
+        }
     curr_learning_srcids = list(set(framework.learning_srcids))
     t3 = arrow.get()
     res_obj.history.append(hist)

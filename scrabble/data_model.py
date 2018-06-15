@@ -24,6 +24,7 @@ class ResultHistory(Document):
     use_brick_flag = BooleanField()
     use_known_tags = BooleanField()
     sample_num_list = ListField()
+    source_building_list = ListField()
     target_building = StringField(required=True)
     negative_flag = BooleanField()
     entqs = StringField()
