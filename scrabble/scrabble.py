@@ -76,6 +76,8 @@ class Scrabble(BaseScrabble):
                                                  deepcopy(self.learning_srcids),
                                                  config=config
                                                  )
+        self.target_cluster_dict = \
+            self.char2ir.building_cluster_dict[target_building]
 
     def init_data(self):
         self.sentence_dict = {}
@@ -158,7 +160,38 @@ class Scrabble(BaseScrabble):
         proba = self.ir2tagsets.predict_proba(target_srcids)
         return proba
 
+    def find_cluster_id(self, cluster_dict, srcid):
+        for cid, cluster in cluster_dict.items():
+            if srcid in cluster:
+                return cid
+        raise Exception('{0} not found in the cluster dict'.format(srcid))
+
     def select_informative_samples(self, sample_num):
+        char2ir_srcids = self.char2ir.select_informative_samples(sample_num)
+        ir2tagsets_srcids = self.ir2tagsets.select_informative_samples(
+                                sample_num)
+        cand_srcids = [item for pair in zip(char2ir_srcids, ir2tagsets_srcids)
+                      for item in pair]
+        #redundant_srcids = [srcid for srcid in new_srcids
+        #                    if srcid in self.learning_srcids]
+        new_srcids = []
+        found_clusters = []
+        for srcid in cand_srcids:
+            cid = self.find_cluster_id(self.target_cluster_dict, srcid)
+            if cid in found_clusters:
+                continue
+            if srcid in self.learning_srcids:
+                print('WARNING: redundant srcids from select_samples(): {0}'
+                      .format(redundant_srcids))
+                continue
+            found_clusters.append(cid)
+            new_srcids.append(srcid)
+            if len(new_srcids) >= sample_num:
+                break
+
+        return new_srcids
+
+    def select_informative_samples_dep(self, sample_num):
         char2ir_num = int(sample_num / 2)
         ir2tagsets_num = sample_num - char2ir_num
         char2ir_srcids = self.char2ir.select_informative_samples(char2ir_num)
