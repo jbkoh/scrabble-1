@@ -1,4 +1,5 @@
 from uuid import uuid4
+import os
 from operator import itemgetter
 from itertools import chain
 from copy import deepcopy
@@ -33,6 +34,8 @@ from .brick_parser import pointTagsetList        as  point_tagsets,\
                          equipSubclassDict      as  equip_subclass_dict,\
                          locationSubclassDict   as  location_subclass_dict,\
                          tagsetTree             as  tagset_tree
+
+os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
 from keras.layers import Input, Dense, Dropout
 from keras.models import Sequential
@@ -209,11 +212,12 @@ class Ir2Tagsets(BaseScrabble):
 
             if not self.learning_srcids:
                 sample_srcid_list = select_random_samples(
-                    building,
-                    one_label_dict.keys(),
-                    source_sample_num,
-                    self.use_cluster_flag,
-                    self.building_sentence_dict[building],
+                    building = building,
+                    srcids = one_label_dict.keys(),
+                    n = source_sample_num,
+                    use_cluster_flag = self.use_cluster_flag,
+                    sentence_dict = self.building_sentence_dict[building],
+                    shuffle_flag = False
                 )
                 self.learning_srcids += sample_srcid_list
             one_tagsets_dict = self.building_tagsets_dict[building]
@@ -290,38 +294,39 @@ class Ir2Tagsets(BaseScrabble):
         std_usage_rate = np.std(phrase_usages)
         # Select underexploited sentences.
         threshold = mean_usage_rate - std_usage_rate
-        todo_sentence_dict = dict((srcid, alpha_tokenizer(''.join(
-                                   self.sentence_dict[srcid])))
-                                   for srcid, usage_rate
-                                   in phrase_usage_dict.items()
-                                   if usage_rate < threshold and srcid in test_srcids)
+        todo_sentence_dict = dict(
+            (srcid, alpha_tokenizer(''.join(self.sentence_dict[srcid])))
+            for srcid, usage_rate
+            in phrase_usage_dict.items()
+            if usage_rate < threshold and srcid in test_srcids)
         #cluster_dict = get_cluster_dict(building)
         cluster_dict = self.building_cluster_dict[building]
-        todo_srcids = select_random_samples(building, \
-                              list(todo_sentence_dict.keys()),
-                              min(inc_num, len(todo_sentence_dict)), \
-                              True,\
-                              reverse=True,
-                              cluster_dict=cluster_dict,
-                              shuffle_flag=False
-                             )
+        todo_srcids = select_random_samples(
+            building = building,
+            srcids = list(todo_sentence_dict.keys()),
+            n = min(inc_num, len(todo_sentence_dict)),
+            use_cluster_flag = True,
+            cluster_dict = cluster_dict,
+            shuffle_flag = False,
+        )
         #if the numbers are not enough randomly select more:
         if len(todo_srcids) < inc_num:
             more_num = inc_num - len(todo_srcids)
-            todo_sentence_dict = dict((srcid, alpha_tokenizer(''.join(
-                                       self.sentence_dict[srcid])))
-                                       for srcid, usage_rate
-                                       in phrase_usage_dict.items()
-                                       if srcid in test_srcids)
+            todo_sentence_dict = dict(
+                (srcid, alpha_tokenizer(''.join(self.sentence_dict[srcid])))
+                for srcid, usage_rate
+                in phrase_usage_dict.items()
+                if srcid in test_srcids)
             #cluster_dict = get_cluster_dict(building)
             cluster_dict = self.building_cluster_dict[building]
-            todo_srcids = select_random_samples(building, \
-                                  list(todo_sentence_dict.keys()),
-                                  min(more_num, len(todo_sentence_dict)), \
-                                  True,\
-                                  cluster_dict=cluster_dict,
-                                  shuffle_flag=True
-                                 )
+            todo_srcids += select_random_samples(
+                building = building,
+                srcids = list(todo_sentence_dict.keys()),
+                n = min(more_num, len(todo_sentence_dict)),
+                use_cluster_flag = True,
+                cluster_dict = cluster_dict,
+                shuffle_flag = True
+            )
         return todo_srcids
 
     def ir2tagset_al_query_entropy(self,

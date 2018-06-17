@@ -45,13 +45,14 @@ config = {
     'negative_flag': args.negative_flag
 }
 
-learning_srcid_file = 'metadata/test'
-for building, source_sample_num in zip(source_buildings,
-                                       source_sample_num_list):
-    learning_srcid_file += '_{0}_{1}'.format(building, source_sample_num)
-learning_srcid_file += '_srcids.json'
+#learning_srcid_file = 'metadata/test'
+#for building, source_sample_num in zip(source_buildings,
+#                                       source_sample_num_list):
+#    learning_srcid_file += '_{0}_{1}'.format(building, source_sample_num)
+#learning_srcid_file += '_srcids.json'
 
-if os.path.isfile(learning_srcid_file):
+if False and os.path.isfile(learning_srcid_file):
+    # Disable this
     with open(learning_srcid_file, 'r') as fp:
         predefined_learning_srcids = json.load(fp)
 else:
@@ -59,14 +60,15 @@ else:
     for building, source_sample_num in zip(source_buildings,
                                            source_sample_num_list):
         predefined_learning_srcids += select_random_samples(
-            building,
-            building_tagsets_dict[building].keys(),
-            True,
-            source_sample_num,
-            building_sentence_dict[building],
+            building = building,
+            srcids = building_tagsets_dict[building].keys(),
+            n=source_sample_num,
+            use_cluster_flag = True,
+            sentence_dict = building_sentence_dict[building],
+            shuffle_flag = False
         )
-    with open(learning_srcid_file, 'w') as fp:
-        json.dump(predefined_learning_srcids, fp)
+    #with open(learning_srcid_file, 'w') as fp:
+    #    json.dump(predefined_learning_srcids, fp)
 
 
 if framework_type == 'char2ir':

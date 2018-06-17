@@ -72,7 +72,8 @@ def get_word_clusters(sentence_dict):
     bow = vect.fit_transform(sentences).toarray()
     z = linkage(bow, metric='cityblock', method='complete')
     dists = list(set(z[:,2]))
-    thresh = (dists[1] + dists[2]) /2
+    thresh = (dists[2] + dists[3]) /2
+    #thresh = (dists[1] + dists[2]) /2
     print("Threshold: ", thresh)
     b = hier.fcluster(z,thresh, criterion='distance')
     cluster_dict = defaultdict(list)
