@@ -179,7 +179,7 @@ class Ir2Tagsets(BaseScrabble):
         else:
             self.use_known_tags = False
 
-        self._init_data()
+        self._init_data(learning_srcids)
         self._init_brick()
 
     def _init_brick(self):
@@ -196,7 +196,7 @@ class Ir2Tagsets(BaseScrabble):
         self.subclass_dict['none'] = list()
         self.tagset_tree = deepcopy(tagset_tree)
 
-    def _init_data(self):
+    def _init_data(self, learning_srcids=[]):
         self.sentence_dict = {}
         self.label_dict = {}
         self.tagsets_dict = {}
@@ -210,7 +210,9 @@ class Ir2Tagsets(BaseScrabble):
             one_label_dict = self.building_label_dict[building]
             self.label_dict.update(one_label_dict)
 
-            if not self.learning_srcids:
+            if learning_srcids:
+                self.learning_srcids = learning_srcids
+            else:
                 sample_srcid_list = select_random_samples(
                     building = building,
                     srcids = one_label_dict.keys(),

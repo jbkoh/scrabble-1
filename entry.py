@@ -72,6 +72,7 @@ else:
 
 
 if framework_type == 'char2ir':
+    """
     framework = Char2Ir(target_building,
                         target_srcids,
                         building_label_dict,
@@ -81,6 +82,20 @@ if framework_type == 'char2ir':
                         learning_srcids=predefined_learning_srcids,
                         config=config
                         )
+    """
+    from scrabble import Scrabble
+    scrabble = Scrabble(target_building,
+                        target_srcids,
+                        building_label_dict,
+                        building_sentence_dict,
+                        building_tagsets_dict,
+                        source_buildings,
+                        source_sample_num_list,
+                        known_tags_dict={},
+                        config=config,
+                        learning_srcids=predefined_learning_srcids
+                        )
+    framework = scrabble.char2ir
 elif framework_type == 'ir2tagsets':
     from scrabble import Scrabble
     scrabble = Scrabble(target_building,

@@ -75,9 +75,9 @@ class Char2Ir(BaseScrabble):
             self.use_brick_flag = False  # Temporarily disable it
         """
         self.use_brick_flag = False
-        self._init_data()
+        self._init_data(learning_srcids)
 
-    def _init_data(self):
+    def _init_data(self, learning_srcids=[]):
         self.sentence_dict = {}
         self.label_dict = {}
         self.building_cluster_dict = {}
@@ -87,13 +87,16 @@ class Char2Ir(BaseScrabble):
             one_label_dict = self.building_label_dict[building]
             self.label_dict.update(one_label_dict)
 
-            if not self.learning_srcids:
+            if learning_srcids:
+                self.learning_srcids = learning_srcids
+            else:
                 sample_srcid_list = select_random_samples(
-                    building,
-                    one_label_dict.keys(),
-                    source_sample_num,
-                    self.use_cluster_flag,
-                    self.building_sentence_dict[building]
+                    building = building,
+                    srcids = one_label_dict.keys(),
+                    n = source_sample_num,
+                    use_cluster_flag = self.use_cluster_flag,
+                    sentence_dict = self.building_sentence_dict[building],
+                    shuffle_flag = False,
                 )
                 self.learning_srcids += sample_srcid_list
 

@@ -44,7 +44,7 @@ class Scrabble(BaseScrabble):
         else:
             self.graphize = False
 
-        self.init_data()
+        self.init_data(learning_srcids)
         self.char2ir = Char2Ir(target_building,
                                target_srcids,
                                building_label_dict,
@@ -65,7 +65,6 @@ class Scrabble(BaseScrabble):
                                      known_tags_dict=known_tags_dict,
                                      config=config
                                      )
-
         self.tagsets2entities = Tagsets2Entities(target_building,
                                                  target_srcids,
                                                  building_label_dict,
@@ -78,8 +77,9 @@ class Scrabble(BaseScrabble):
                                                  )
         self.target_cluster_dict = \
             self.char2ir.building_cluster_dict[target_building]
+        self.update_model([])
 
-    def init_data(self):
+    def init_data(self, learning_srcids=[]):
         self.sentence_dict = {}
         self.label_dict = {}
         self.tagsets_dict = {}
@@ -92,7 +92,9 @@ class Scrabble(BaseScrabble):
             one_label_dict = self.building_label_dict[building]
             self.label_dict.update(one_label_dict)
 
-            if not self.learning_srcids:
+            if learning_srcids:
+                self.learning_srcids = learning_srcids
+            else:
                 sample_srcid_list = select_random_samples(
                     building = building,
                     srcids = one_label_dict.keys(),
