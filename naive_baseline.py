@@ -20,10 +20,18 @@ from sklearn.preprocessing import MultiLabelBinarizer
 from sklearn.metrics import precision_recall_fscore_support
 from scipy.stats import entropy as get_entropy
 
-from scrabble_hierarchy import select_random_samples
-import building_tokenizer as toker
-from eval_func import *
-from common import *
+#from scrabble_hierarchy import select_random_samples
+#import building_tokenizer as toker
+from scrabble.eval_func import *
+#from common import *
+from scrabble.data_model import *
+from scrabble.common import *
+
+def reduce_dict(d):
+    new_d = {}
+    for k, v in d.items():
+        new_d.update(v)
+    return new_d
 
 def str2bool(v):
     if v in ['true', 'True']:
@@ -121,6 +129,7 @@ def naive_base(params):
         for building, n in zip(building_list, n_list):
             if building == target_building:
                 n += iter_i * inc_num
+            """
             if building != 'ghc':
                 (sensorDF, 
                 srcid_list, 
@@ -139,23 +148,32 @@ def naive_base(params):
 
                 curr_sentence_dict = dict([(srcid, list(map(replacer, sentence))) for srcid, sentence in curr_sentence_dict.items()])
                 sentence_dict.update(curr_sentence_dict)
-
-            with open('metadata/{0}_ground_truth.json'.format(building), 'r') as fp:
-                truth_dict.update(json.load(fp))
-            label_dict = get_label_dict(building)
-            srcids = list(truth_dict.keys())
+            """
+            building_sentence_dict, target_srcids, building_label_dict,\
+                building_tagsets_dict, known_tags_dict = load_data(target_building,
+                                                                   [building])
+            raw_sentence_dict = reduce_dict(building_sentence_dict)
+            sentence_dict = {}
+            tightjoiner = lambda l: ''.join(l)
+            sentence_dict = {srcid: '\n'.join(map(tightjoiner,
+                                                  list(sentences.values())))
+                             for srcid, sentences in raw_sentence_dict.items()}
+            label_dict = reduce_dict(building_label_dict)
+            truth_dict = reduce_dict(building_tagsets_dict)
+            srcids = list(building_tagsets_dict[building].keys())
 
             if iter_i == 0:
                 learning_srcids += select_random_samples(
-                                       building,
-                                       srcids,
-                                       n,
-                                       True,
-                                       token_type='justseparate',
-                                       reverse=True,
-                                       cluster_dict=None,
-                                       shuffle_flag=False
-                                       )
+                    building=building,
+                    srcids=srcids,
+                    n=n,
+                    use_cluster_flag=True,
+                    sentence_dict = raw_sentence_dict,
+                    token_type='justseparate',
+                    reverse=True,
+                    cluster_dict=None,
+                    shuffle_flag=False
+                )
             else:
                 learning_srcids += new_srcids * 3
                 pass
