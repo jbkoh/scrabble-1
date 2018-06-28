@@ -24,7 +24,9 @@ framework_type = args.task
 
 building_sentence_dict, target_srcids, building_label_dict,\
     building_tagsets_dict, known_tags_dict = load_data(target_building,
-                                                       source_buildings)
+                                                       source_buildings,
+                                                       bacnettype_flag=True,
+                                                       )
 tot_tagsets_dict = {}
 for building, tagsets_dict in building_tagsets_dict.items():
     tot_tagsets_dict.update(tagsets_dict )
@@ -42,7 +44,8 @@ config = {
     'use_brick_flag': args.use_brick_flag,
     'crfqs': args.crfqs,
     'entqs': args.entqs,
-    'negative_flag': args.negative_flag
+    'negative_flag': args.negative_flag,
+    'ts_flag': args.ts_flag
 }
 
 #learning_srcid_file = 'metadata/test'

@@ -599,6 +599,7 @@ def get_result_obj(params, clean_history):
         'tagset_classifier_type',
         'postfix',
         'task',
+        'ts_flag'
     ]
     query = {k: getattr(params, k) for k in query_keys}
     res_obj = ResultHistory.objects(**query).upsert_one(**query)
@@ -608,3 +609,18 @@ def get_result_obj(params, clean_history):
         res_obj.history = []
     res_obj.save()
     return res_obj
+
+def get_true_labels(srcids, label_type):
+    """
+    Input:
+      - target_srcids
+      - label_type: one of POINT_TAGSET, FULL_PARSING defined in common.py
+    """
+    truths = {}
+    for srcid in srcids:
+        objs = LabeledMetadata.objects(srcid=srcid)
+        if not objs:
+            raise Exception('No {0} labels found for {1}'
+                            .format(label_type, srcid))
+        truths[srcid] = objs.first()[label_type]
+    return truths

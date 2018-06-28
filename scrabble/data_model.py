@@ -15,6 +15,7 @@ class LabeledMetadata(Document):
     fullparsing = DictField()
     tagsets = ListField(StringField())
     point_tagset = StringField()
+
 column_names = ['VendorGivenName', 
                  'BACnetName', 
                  'BACnetDescription']
@@ -32,4 +33,5 @@ class ResultHistory(Document):
     tagset_classifier_type = StringField()
     postfix = StringField()
     task = StringField()
+    ts_flag = BooleanField()
 

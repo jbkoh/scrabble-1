@@ -502,12 +502,11 @@ class Ir2Tagsets(BaseScrabble):
             pdb.set_trace()
 
 
-    def _augment_with_ts(self, test_phrases_dict):
+    def _augment_with_ts(self, phrase_dict):
         # TODO: Implement below
         ts_learning_srcids = list()
         learning_tags_dict = {srcid: splitter(self.point_dict[srcid])
                               for srcid in self.learning_srcids}
-
         tag_binarizer = MultiLabelBinarizer()
         tag_binarizer.fit(map(splitter, self.point_dict.values()))
         with open(self.ts_feature_filename, 'rb') as fp:
@@ -516,7 +515,7 @@ class Ir2Tagsets(BaseScrabble):
         for ts_feature in ts_features:
             feats = ts_feature[0]
             srcid = ts_feature[2]
-            if srcid in self.learning_srcids + self.validation_srcids:
+            if srcid in self.learning_srcids:
                 point_tagset = self.point_dict[srcid]
                 point_tags = point_tagset.split('_')
                 point_vec = tag_binarizer.transform([point_tags])
@@ -527,18 +526,20 @@ class Ir2Tagsets(BaseScrabble):
         ts_features = new_ts_features
 
         self.ts2ir = TimeSeriesToIR(mlb=tag_binarizer)
-        self.ts2ir.fit(ts_features, self.learning_srcids, self.validation_srcids, learning_tags_dict)
+        self.ts2ir.fit(ts_features, self.learning_srcids, learning_tags_dict)
         learning_ts_tags_pred = self.ts2ir.predict(ts_features, self.learning_srcids)
         for srcid, ts_tags in zip(self.learning_srcids, \
                                   tag_binarizer.inverse_transform(
                                       learning_ts_tags_pred)):
             #learning_phrase_dict[srcid] += list(ts_tags)
             ts_srcid = srcid + '_ts'
-            learning_phrase_dict[ts_srcid] = learning_phrase_dict[srcid]\
+            phrase_dict[ts_srcid] = phrase_dict[srcid]\
                                                 + list(ts_tags)
             ts_learning_srcids.append(ts_srcid)
-            learning_truths_dict[ts_srcid] = learning_truths_dict[srcid]
+            self.tagsets_dict[ts_srcid] = self.tagsets_dict[srcid]
 
+        test_srcids = [srcid for srcid in self.target_srcids
+                       if srcid not in self.learning_srcids]
         test_ts_tags_pred = self.ts2ir.predict(ts_features, test_srcids)
         for srcid, ts_tags in zip(test_srcids, \
                                   tag_binarizer.inverse_transform(
@@ -546,7 +547,7 @@ class Ir2Tagsets(BaseScrabble):
             #ts_srcid = srcid + '_ts'
             #test_phrase_dict[ts_srcid] = test_phrase_dict[srcid] + list(ts_tags)
             #test_srcids .append(ts_srcid) # TODO: Validate if this works.
-            test_phrase_dict[srcid] += list(ts_tags)
+            phrase_dict[srcid] += list(ts_tags)
 
     def _augment_negative_examples(self, doc, srcids):
         negative_doc = []
@@ -738,8 +739,7 @@ class Ir2Tagsets(BaseScrabble):
                                 .format(self.vectorizer_type))
 
         if self.ts_flag:
-            pass
-            #TODO: Run self._augment_with_ts()
+            self._augment_with_ts(self.phrase_dict)
 
         ## Transform learning samples
         if self.use_known_tags:

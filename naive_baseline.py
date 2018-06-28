@@ -9,16 +9,24 @@ from copy import deepcopy
 import os
 
 import numpy as np
-from skmultilearn.problem_transform import LabelPowerset, \
-                                           BinaryRelevance#, \
-                                           #ClassifierChain
-from sklearn.multioutput import ClassifierChain
+from skmultilearn.problem_transform import ClassifierChain
+#from sklearn.multioutput import ClassifierChain
+from sklearn.svm import SVC
 
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
+from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import MultiLabelBinarizer
 from sklearn.metrics import precision_recall_fscore_support
 from scipy.stats import entropy as get_entropy
+
+"""
+os.environ["CUDA_VISIBLE_DEVICES"] = ""
+from keras.layers import Input, Dense, Dropout
+from keras.models import Sequential
+from keras.constraints import max_norm
+from keras import regularizers
+"""
 
 #from scrabble_hierarchy import select_random_samples
 #import building_tokenizer as toker
@@ -26,6 +34,37 @@ from scrabble.eval_func import *
 #from common import *
 from scrabble.data_model import *
 from scrabble.common import *
+
+def get_mlp_model(data_dim, output_dim):
+    model = Sequential()
+    #model.add(Dropout(0.2,
+    #                  input_shape=(data_dim,),
+    #                  ))
+    model.add(Dense(64,
+                    input_shape=(data_dim,),
+                    #bias_regularizer=regularizers.l1(0.0001),
+                    #kernel_regularizer=regularizers.l1(0.001),
+                    #activity_regularizer=regularizers.l1(0.001),
+                    #kernel_constraint=max_norm(3),
+                    activation='relu'))
+    model.add(Dropout(0.1))
+    model.add(Dense(64,
+                    input_shape=(data_dim,),
+                    #bias_regularizer=regularizers.l1(0.0001),
+                    #kernel_regularizer=regularizers.l1(0.001),
+                    #activity_regularizer=regularizers.l1(0.001),
+                    kernel_constraint=max_norm(3),
+                    activation='relu'))
+    model.add(Dropout(0.1))
+    model.add(Dense(output_dim,
+                    #bias_regularizer=regularizers.l1(0.0001),
+                    #kernel_regularizer=regularizers.l1(0.0001),
+                    #activity_regularizer=regularizers.l2(0.01),
+                    #kernel_constraint=max_norm(3),
+                    activation='sigmoid'))
+    model.compile(optimizer='rmsprop',
+                  loss='binary_crossentropy',)
+    return model
 
 def reduce_dict(d):
     new_d = {}
@@ -100,7 +139,8 @@ def joiner(x):
     return ' '.join(x)
 
 def tokenizer(x):
-    return x.split()
+    #return x.split()
+    return re.findall('[a-zA-Z]+', x)
 
 building_list = args.building_list
 n_list = args.sample_num_list
@@ -153,13 +193,12 @@ def naive_base(params):
                 building_tagsets_dict, known_tags_dict = load_data(target_building,
                                                                    [building])
             raw_sentence_dict = reduce_dict(building_sentence_dict)
-            sentence_dict = {}
             tightjoiner = lambda l: ''.join(l)
-            sentence_dict = {srcid: '\n'.join(map(tightjoiner,
-                                                  list(sentences.values())))
-                             for srcid, sentences in raw_sentence_dict.items()}
+            for srcid, sentences in raw_sentence_dict.items():
+                sentence_dict[srcid] = '\n'.join(map(tightjoiner,
+                                                     list(sentences.values()))).lower()
             label_dict = reduce_dict(building_label_dict)
-            truth_dict = reduce_dict(building_tagsets_dict)
+            truth_dict.update(reduce_dict(building_tagsets_dict))
             srcids = list(building_tagsets_dict[building].keys())
 
             if iter_i == 0:
@@ -176,25 +215,46 @@ def naive_base(params):
                 )
             else:
                 learning_srcids += new_srcids * 3
+                #learning_srcids += new_srcids
                 pass
             if building == target_building:
                 test_srcids = [srcid for srcid in label_dict.keys() if srcid not in learning_srcids]
 
         binarizer = MultiLabelBinarizer().fit(truth_dict.values())
-        vectorizer = TfidfVectorizer(tokenizer=tokenizer).fit(list(map(joiner, sentence_dict.values())))
-        learning_doc = [' '.join(sentence_dict[srcid]) for srcid in learning_srcids]
+        source_doc = [sentence_dict[srcid] for srcid in test_srcids + learning_srcids]
+        vectorizer = TfidfVectorizer(tokenizer=tokenizer).fit(list(sentence_dict.values()))
+        learning_doc = [sentence_dict[srcid] for srcid in learning_srcids]
+        """
+        vocabs = list()
+        for sent in learning_doc:
+            vocabs += re.findall('[a-zA-Z]+', sent)
+        vocabs = list(set(vocabs))
+        """
         learning_vect_doc = vectorizer.transform(learning_doc)
-
         learning_truth_mat = binarizer.transform([truth_dict[srcid] for srcid in learning_srcids])
 
-        #classifier = RandomForestClassifier(n_estimators=200, n_jobs=1)
+        classifier = RandomForestClassifier(n_estimators=200, n_jobs=1)
         classifier = ClassifierChain(RandomForestClassifier())
+        #classifier = ClassifierChain(LogisticRegression())
+        #classifier = get_mlp_model(learning_vect_doc.shape[1], learning_truth_mat.shape[1])
         classifier.fit(learning_vect_doc, learning_truth_mat)
+        #classifier.fit(learning_vect_doc,
+        #               learning_truth_mat,
+        #               batch_size=128,
+        #               epochs=400,
+        #               verbose=False)
 
-        test_doc = [' '.join(sentence_dict[srcid]) for srcid in test_srcids]
+        test_doc = [sentence_dict[srcid] for srcid in test_srcids]
         test_vect_doc = vectorizer.transform(test_doc)
 
+
+        prob_mat = classifier.predict_proba(test_vect_doc.toarray())
+        pdb.set_trace()
         pred_mat = classifier.predict(test_vect_doc)
+        #biner = lambda v: 1 if v > 0.5 else 0
+        #bin_func = np.vectorize(biner)
+        #pred_mat = bin_func(pred_mat)
+
         prob_mat = classifier.predict_proba(test_vect_doc)
 
         # Query Stage for Active Learning
@@ -289,6 +349,7 @@ print('Avg Accuracy: {0}'.format(acc_avg_list))
 print('Std Accuracy: {0}'.format(acc_std_list))
 print('Avg MacroF1: {0}'.format(mf1_avg_list))
 print('Std MacroF1: {0}'.format(mf1_std_list))
+pdb.set_trace()
 
 result_file = 'result/baseline.json'
 if os.path.isfile(result_file):

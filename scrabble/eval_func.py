@@ -8,6 +8,15 @@ import numpy as np
 
 adder = lambda x,y: x+y
 
+def binarize_labels(true_labels, pred_labels):
+    srcids = list(pred_labels.keys())
+    tot_labels = [list(labels) for labels in
+               list(pred_labels.values()) + list(true_labels.values())]
+    mlb = MultiLabelBinarizer().fit(tot_labels)
+    pred_mat = mlb.transform(pred_labels.values())
+    true_mat = mlb.transform(true_labels.values())
+    return true_mat, pred_mat
+
 def get_score(pred_dict, true_dict, srcids, score_func, labels):
     score = 0
     for srcid in srcids:
@@ -25,6 +34,15 @@ def accuracy_func(pred_tagsets, true_tagsets, labels=None):
     true_tagsets = set(true_tagsets)
     return len(pred_tagsets.intersection(true_tagsets))\
             / len(pred_tagsets.union(true_tagsets))
+
+def get_accuracy(true_tagsets_sets, pred_tagsets_sets):
+    acc = 0
+    for srcid, pred_tagsets in pred_tagsets_sets.items():
+        pred = set(pred_tagsets)
+        true = set(true_tagsets_sets[srcid])
+        jaccard = len(pred.intersection(true)) / len(pred.union(true))
+        acc += jaccard
+    return acc / len(pred_tagsets_sets)
 
 def hierarchy_accuracy_func(pred_tagsets, true_tagsets, labels=None):
     true_tagsets = deepcopy(true_tagsets)
@@ -92,7 +110,15 @@ def hamming_loss_func(pred_tagsets, true_tagsets, labels):
 def subset_accuracy_func(pred_Y, true_Y, labels):
     return 1 if set(pred_Y) == set(true_Y) else 0
 
-def get_micro_f1(true_mat, pred_mat):
+def get_macro_f1(true_labels, pred_labels):
+    true_mat, pred_mat = binarize_labels(true_labels, pred_labels)
+    return get_macro_f1_mat(true_mat, pred_mat)
+
+def get_micro_f1(true_labels, pred_labels):
+    true_mat, pred_mat = binarize_labels(true_labels, pred_labels)
+    return get_micro_f1_mat(true_mat, pred_mat)
+
+def get_micro_f1_mat(true_mat, pred_mat):
     TP = np.sum(np.bitwise_and(true_mat==1, pred_mat==1))
     TN = np.sum(np.bitwise_and(true_mat==0, pred_mat==0))
     FN = np.sum(np.bitwise_and(true_mat==1, pred_mat==0))
@@ -101,7 +127,7 @@ def get_micro_f1(true_mat, pred_mat):
     micro_rec = TP / (TP + FN)
     return 2 * micro_prec * micro_rec / (micro_prec + micro_rec)
 
-def get_macro_f1(true_mat, pred_mat):
+def get_macro_f1_mat(true_mat, pred_mat):
     assert true_mat.shape == pred_mat.shape
     f1s = []
     for i in range(0, true_mat.shape[1]):
@@ -136,7 +162,7 @@ def get_macro_f1_raw(true_labels, pred_labels):
     pred_mat, true_mat = binarize_labels(pred_labels, true_labels)
     return get_macro_f1(true_mat, pred_mat)
 
-def get_accuracy(true_mat, pred_mat):
+def get_accuracy_mat(true_mat, pred_mat):
     acc_list = list()
     for true, pred in zip(true_mat, pred_mat):
         true_pos_indices = set(np.where(true==1)[0])
