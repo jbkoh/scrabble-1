@@ -32,7 +32,14 @@ class Scrabble(BaseScrabble):
                  deepcopy(learning_srcids),
                  config)
         from .ir2tagsets import Ir2Tagsets
-        from .char2ir import Char2Ir
+        if 'sequential_type' in config:
+            self.sequential_type = config['sequential_type']
+        else:
+            self.sequential_type = 'crf'
+        if self.sequential_type == 'crf':
+            from .char2ir import Char2Ir
+        elif self.sequential_type == 'lstm':
+            from .char2ir_lstm import Char2Ir
         self.target_srcids = target_srcids
         self.known_tags_dict = known_tags_dict
         if 'use_cluster_flag' in config:
@@ -43,6 +50,10 @@ class Scrabble(BaseScrabble):
             self.graphize = config['graphize']
         else:
             self.graphize = False
+        if 'init_model_flag' in config:
+            self.init_model_flag = config['init_model_flag']
+        else:
+            self.init_model_flag = True
 
         self.init_data(learning_srcids)
         self.char2ir = Char2Ir(target_building,
@@ -77,7 +88,13 @@ class Scrabble(BaseScrabble):
                                                  )
         self.target_cluster_dict = \
             self.char2ir.building_cluster_dict[target_building]
-        self.update_model([])
+        if self.init_model_flag:
+            self.update_model([])
+
+    def clear_training_samples(self):
+        self.learning_srcids = []
+        self.char2ir.learning_srcids = []
+        self.ir2tagsets.learning_srcids = []
 
     def init_data(self, learning_srcids=[]):
         self.sentence_dict = {}

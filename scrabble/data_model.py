@@ -33,5 +33,6 @@ class ResultHistory(Document):
     tagset_classifier_type = StringField()
     postfix = StringField()
     task = StringField()
+    sequential_type = StringField()
     ts_flag = BooleanField()
 

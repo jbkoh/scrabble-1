@@ -2,6 +2,7 @@ import os
 from uuid import uuid4
 from operator import itemgetter
 from pathlib import Path
+from collections import defaultdict
 
 import pycrfsuite
 from bson.binary import Binary as BsonBinary
@@ -79,6 +80,7 @@ class Char2Ir(BaseScrabble):
 
     def _init_data(self, learning_srcids=[]):
         self.sentence_dict = {}
+        self.sentence_len_dict = defaultdict(dict)
         self.label_dict = {}
         self.building_cluster_dict = {}
         for building, source_sample_num in zip(self.source_buildings,
@@ -103,6 +105,16 @@ class Char2Ir(BaseScrabble):
             if building not in self.building_cluster_dict:
                 self.building_cluster_dict[building] = get_word_clusters(
                     self.building_sentence_dict[building])
+
+        self.max_len = 1 + max([
+            max([len(sentence) for sentence in sentences.values()])
+            for sentences in self.sentence_dict.values()
+        ])
+        for srcid, metadata in self.sentence_dict.items():
+            for metadata_type in self.available_metadata_types:
+                self.sentence_len_dict[srcid][metadata_type] = \
+                    len(metadata[metadata_type])
+        self.sentence_len_dict = dict(self.sentence_len_dict)
 
         # Construct Brick examples
         brick_sentence_dict = dict()

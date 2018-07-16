@@ -91,13 +91,6 @@ def test_brick_tagset(sentence, token_labels, classifier, vectorizer):
     pred = classifier.predict(vec)[0]
     return translate_tagset_vector(pred)
 
-def make_phrase_dict(sentence_dict, token_label_dict):
-    phrase_dict = OrderedDict()
-    for srcid, sentence in sentence_dict.items():
-        token_labels = token_label_dict[srcid]
-        phrase_dict[srcid] = _bilou_tagset_phraser(sentence, token_labels)
-    return phrase_dict
-
 
 def batch_test_brick_tagset(sentence_dict, \
                             token_label_dict, \

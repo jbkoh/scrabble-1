@@ -8,7 +8,7 @@ import random
 
 from scrabble.data_model import *
 from scrabble.common import *
-from scrabble.char2ir import Char2Ir
+#from scrabble.char2ir import Char2Ir
 
 
 args =argparser.parse_args()
@@ -16,6 +16,9 @@ args =argparser.parse_args()
 t0 = arrow.get()
 
 res_obj = get_result_obj(args, True)
+full_history_filename = 'result/{0}_{1}_{2}.json'.format(
+    res_obj.task, res_obj.sequential_type, res_obj.postfix)
+full_history = []
 
 source_buildings = args.source_building_list
 target_building = args.target_building
@@ -45,7 +48,8 @@ config = {
     'crfqs': args.crfqs,
     'entqs': args.entqs,
     'negative_flag': args.negative_flag,
-    'ts_flag': args.ts_flag
+    'ts_flag': args.ts_flag,
+    'sequential_type': args.sequential_type,
 }
 
 #learning_srcid_file = 'metadata/test'
@@ -145,26 +149,40 @@ elif framework_type == 'scrabble':
                         )
     framework = scrabble
 
-framework.update_model([])
+#framework.update_model([])
 history = []
 curr_learning_srcids = []
 for i in range(0, args.iter_num):
     t2 = arrow.get()
-    new_srcids = framework.select_informative_samples(args.inc_num)
+    if i == 0:
+        new_srcids = []
+    else:
+        new_srcids = framework.select_informative_samples(args.inc_num)
     framework.update_model(new_srcids)
     if framework_type == 'char2ir':
         pred_tags = framework.predict(target_srcids + framework.learning_srcids)
+        """
+        pred_phrases = defaultdict(dict)
+        for srcid, tags_dict in pred_tags.items():
+            for metadata_type, tags in tags_dict.items():
+                pred_phrases[srcid][metadata_type] = list(set(
+                    bilou_tagset_phraser(tags)
+                ))
+        """
         pred = None
+        pred_phrases = make_phrase_dict(token_label_dict=pred_tags)
     elif framework_type == 'ir2tagsets':
         pred = framework.predict(target_srcids + scrabble.learning_srcids)
         pred_tags = None
+        pred_phrases = None
     elif framework_type == 'scrabble':
         pred = framework.predict(target_srcids + scrabble.learning_srcids)
         pred_tags = None
+        pred_phrases = None
         #pred_tags = framework.predict_tags(target_srcids)
 
-    tot_crf_acc, learning_crf_acc, tot_acc, tot_point_acc,\
-        learning_acc, learning_point_acc = calc_acc(
+    tot_crf_acc, learning_crf_acc, tot_f1, tot_macro_f1,\
+        tot_acc, tot_point_acc, learning_acc, learning_point_acc = calc_acc(
             true      = tot_tagsets_dict,
             pred      = pred,
             true_crf  = tot_labels_dict,
@@ -179,6 +197,8 @@ for i in range(0, args.iter_num):
     if framework_type == 'char2ir':
         hist = {
             'acc': tot_crf_acc,
+            'f1': tot_f1,
+            'macrof1': tot_macro_f1,
             'new_srcids': new_srcids,
             'learning_srcids': len(list(set(framework.learning_srcids)))
         }
@@ -191,6 +211,15 @@ for i in range(0, args.iter_num):
         }
     curr_learning_srcids = list(set(framework.learning_srcids))
     t3 = arrow.get()
-    res_obj.history.append(hist)
+    res_obj['history'].append(hist)
     res_obj.save()
+    full_history.append({
+        'summary': hist,
+        'full': {
+            'pred_tags': pred_tags,
+            'pred_phrases': pred_phrases
+        }
+    })
+    with open(full_history_filename, 'w') as fp:
+        json.dump(full_history, fp, indent=2)
     print('{0}th took {1}'.format(i, t3 - t2))

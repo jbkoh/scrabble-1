@@ -16,6 +16,7 @@ from scipy.cluster.hierarchy import linkage
 import scipy.cluster.hierarchy as hier
 
 from .data_model import *
+from .eval_func import get_macro_f1, get_micro_f1
 
 POINT_POSTFIXES = ['sensor', 'setpoint', 'command', 'alarm', 'status', 'meter']
 
@@ -138,10 +139,10 @@ def alpha_tokenizer(s):
 def adder(x, y):
     return x+y
 
-def bilou_tagset_phraser(sentence, token_labels, keep_alltokens=False):
+def bilou_tagset_phraser(token_labels, keep_alltokens=False):
     phrase_labels = list()
     curr_phrase = ''
-    for i, (c, label) in enumerate(zip(sentence, token_labels)):
+    for i, label in enumerate(token_labels):
         if label[2:] in ['rightidentifier', 'leftidentifier'] \
                 and not keep_alltokens:
             continue
@@ -193,20 +194,24 @@ def bilou_tagset_phraser(sentence, token_labels, keep_alltokens=False):
                             'rightidentifier')\
                         for phrase_label in phrase_labels]
     phrase_labels = list(reduce(adder, map(splitter, phrase_labels), []))
+    if not keep_alltokens:
+        phrase_labels = [phrase for phrase in phrase_labels
+                         if phrase.split('-')[0] not in [
+                                 'building', 'networkadapter'
+                         ]]
     return phrase_labels
 
-def make_phrase_dict(sentence_dict, token_label_dict, keep_alltokens=False):
+def make_phrase_dict(sentence_dict={}, token_label_dict={}, keep_alltokens=False):
     #phrase_dict = OrderedDict()
     phrase_dict = dict()
     for srcid, token_labels_dict in token_label_dict.items():
         phrases = []
         for metadata_type, token_labels in token_labels_dict.items():
-            if srcid not in sentence_dict:
-                #pdb.set_trace()
-                pass
-            sentence = sentence_dict[srcid][metadata_type]
-            phrases += bilou_tagset_phraser(
-                sentence, token_labels, keep_alltokens)
+            #if srcid not in sentence_dict:
+            #    #pdb.set_trace()
+            #    pass
+            #sentence = sentence_dict[srcid][metadata_type]
+            phrases += bilou_tagset_phraser(token_labels, keep_alltokens)
         remove_indices = list()
         for i, phrase in enumerate(phrases):
             #TODO: Below is heuristic. Is it allowable?
@@ -220,7 +225,12 @@ def make_phrase_dict(sentence_dict, token_label_dict, keep_alltokens=False):
         phrases = [phrase for i, phrase in enumerate(phrases)\
                    if i not in remove_indices]
         #phrase_dict[srcid] = phrases + phrases # TODO: Why did I put this before?
-        phrase_dict[srcid] = phrases
+        new_phrases = []
+        for phrase in phrases:
+            if new_phrases and phrase == new_phrases[-1]:
+                continue
+            new_phrases.append(phrase)
+        phrase_dict[srcid] = new_phrases
     return phrase_dict
 
 def hier_clustering(d, threshold=3):
@@ -416,6 +426,17 @@ def calc_acc_sub_tagsets(true, pred, srcids):
     tot_point_acc /= len(srcids)
     return tot_acc, tot_point_acc
 
+def calc_f1_sub_fullparsing(true, pred, srcids):
+    if not pred:
+        return None, None
+    true = {srcid:true[srcid] for srcid in srcids}
+    pred = {srcid:pred[srcid] for srcid in srcids}
+    pred_phrases = make_phrase_dict(token_label_dict=pred)
+    true_phrases = make_phrase_dict(token_label_dict=true)
+    f1 = get_micro_f1(true_phrases, pred_phrases)
+    macro_f1 = get_macro_f1(true_phrases, pred_phrases)
+    return f1, macro_f1
+
 def calc_acc_sub_fullparsing(true, pred, srcids):
     if not pred:
         return None
@@ -428,7 +449,7 @@ def calc_acc_sub_fullparsing(true, pred, srcids):
         curr_acc_cnt = 0
         for key, labels in pred_set.items():
             assert len(true_set[key]) == len(labels)
-            curr_acc_cnt = sum([t==p for t, p in zip(true_set[key], labels)])
+            curr_acc_cnt += sum([t==p for t, p in zip(true_set[key], labels)])
             sent_len += len(labels)
         tot_acc += curr_acc_cnt / sent_len
     tot_acc /= len(srcids)
@@ -444,8 +465,10 @@ def calc_acc(true, pred, true_crf, pred_crf, srcids, learning_srcids):
     crf_learning_acc = calc_acc_sub_fullparsing(true_crf,
                                                 pred_crf,
                                                 learning_srcids)
+    tot_f1, tot_macro_f1 = calc_f1_sub_fullparsing(true_crf, pred_crf, srcids)
 
     return crf_tot_acc, crf_learning_acc, \
+        tot_f1, tot_macro_f1, \
         tot_acc, tot_point_acc, \
         learning_acc, learning_point_acc
 
@@ -545,6 +568,11 @@ argparser.add_argument('-inc',
                        help='Inc num in each strage',
                        dest='inc_num',
                        default=10)
+argparser.add_argument('-st',
+                       type=str,
+                       help='Sequential Model type, either crf or lstm',
+                       dest='sequential_type',
+                       default='crf')
 argparser.add_argument('-ct',
                        type=str,
                        help='Tagset classifier type. one of RandomForest, \
@@ -599,7 +627,8 @@ def get_result_obj(params, clean_history):
         'tagset_classifier_type',
         'postfix',
         'task',
-        'ts_flag'
+        'ts_flag',
+        'sequential_type'
     ]
     query = {k: getattr(params, k) for k in query_keys}
     res_obj = ResultHistory.objects(**query).upsert_one(**query)
