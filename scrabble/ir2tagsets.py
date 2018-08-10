@@ -37,8 +37,9 @@ from .brick_parser import pointTagsetList        as  point_tagsets,\
 
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
-from keras.layers import Input, Dense, Dropout
-from keras.models import Sequential
+from keras.layers import Input, Dense, Dropout, concatenate
+from keras.models import Sequential, Model
+from keras.optimizers import Adam
 from keras.constraints import max_norm
 from keras import regularizers
 import tensorflow as tf
@@ -420,7 +421,7 @@ class Ir2Tagsets(BaseScrabble):
 
         certainty_dict = dict()
         tagsets_dict = dict()
-        if self.tagset_classifier_type == 'MLP':
+        if self.tagset_classifier_type in ['MLP', 'W&D']:
             pred_mat = self.tagset_classifier.predict(vect_doc)
             prob_mat = deepcopy(pred_mat)
             pred_mat[pred_mat >= 0.5] = 1
@@ -971,6 +972,45 @@ class Ir2Tagsets(BaseScrabble):
                                         tagset_tree, tagset_list)
             meta_classifier = meta_voting
             params_list_dict = {}
+        elif self.tagset_classifier_type == 'W&D':
+            # WIDE
+            data_dim = learning_vect_doc.shape[1]
+            output_classes = truth_mat.shape[1]
+            inp  = Input(shape=(data_dim,),
+                         #dtype='float32',
+                         name='wide',
+                         )
+            #x1 = Dense(3, activation='relu')(inp)
+            #x1 = Dense(2, activation='relu')(x1)
+            #x1 = Dense(2, activation='tanh')(x1)
+
+
+            d = Dense(64,
+                       #input_shape=(data_dim,),
+                        #bias_regularizer=regularizers.l1(0.0001),
+                        #kernel_regularizer=regularizers.l1(0.001),
+                        #activity_regularizer=regularizers.l1(0.001),
+                        #kernel_constraint=max_norm(3),
+                        activation='relu')(inp)
+            d = Dropout(0.1)(d)
+            d = Dense(64,
+                       #input_shape=(data_dim,),
+                       #bias_regularizer=regularizers.l1(0.0001),
+                       #kernel_regularizer=regularizers.l1(0.001),
+                       #activity_regularizer=regularizers.l1(0.001),
+                       kernel_constraint=max_norm(3),
+                       activation='relu')(d)
+            d = Dropout(0.1)(d)
+
+            concat = concatenate([inp, d])
+            wd_out = Dense(output_classes,
+                           activation='sigmoid',
+                           name='wide_deep')(concat)
+                           #name='wide_deep')(d)
+            model = Model(inputs=inp, outputs=wd_out)
+            model.compile(optimizer='rmsprop',
+                          loss='binary_crossentropy',)
+
         elif self.tagset_classifier_type == 'MLP':
             # Def model
             data_dim = learning_vect_doc.shape[1]
@@ -988,7 +1028,7 @@ class Ir2Tagsets(BaseScrabble):
                             activation='relu'))
             model.add(Dropout(0.1))
             model.add(Dense(64,
-                            input_shape=(data_dim,),
+                            #input_shape=(data_dim,),
                             #bias_regularizer=regularizers.l1(0.0001),
                             #kernel_regularizer=regularizers.l1(0.001),
                             #activity_regularizer=regularizers.l1(0.001),
@@ -1011,7 +1051,7 @@ class Ir2Tagsets(BaseScrabble):
             truth_mat = csr_matrix(truth_mat)
 
         # TODO: Hyper-parameter optimization. (But expect it'd be slow.)
-        if self.tagset_classifier_type == 'MLP':
+        if self.tagset_classifier_type in ['MLP', 'W&D']:
             self.tagset_classifier = model
         else:
             best_params = {'learning_rate':0.1,
@@ -1024,7 +1064,7 @@ class Ir2Tagsets(BaseScrabble):
             self.tagset_classifier.fit(learning_vect_doc, truth_mat.toarray(), \
                                   orig_sample_num=len(learning_vect_doc)
                                   - len(self.brick_srcids))
-        elif self.tagset_classifier_type == 'MLP':
+        elif self.tagset_classifier_type in ['MLP', 'W&D']:
             self.tagset_classifier.fit(learning_vect_doc,
                                        truth_mat,
                                        batch_size=128,
