@@ -10,7 +10,102 @@ from scrabble.data_model import *
 from scrabble.common import *
 #from scrabble.char2ir import Char2Ir
 
+argparser = argparse.ArgumentParser()
+argparser.register('type','bool',str2bool)
+argparser.register('type','slist', str2slist)
+argparser.register('type','ilist', str2ilist)
 
+argparser.add_argument('-task',
+                       type=str,
+                       help='Types of the learning task. One of ``scrabble``, ``char2ir`` and ``ir2tagsets``. ``scrabble`` tests the entire model and each of the others does for each step (1st and 2nd.)',
+                       choices=['char2ir', 'ir2tagsets', 'scrabble', 'tagsets2entities'],
+                       dest='task',
+                       required=True
+                       )
+argparser.add_argument('-bl',
+                       type='slist',
+                       help='Learning source building name list: list of source building names deliminated by comma (e.g., ``-bl ebu3b,bml``).',
+                       dest='source_building_list',
+                       required=True
+                       )
+argparser.add_argument('-nl',
+                       type='ilist',
+                       help='Sample number list: list of sample numbers per building. The order should be same as bl. (e.g., ``-nl 200,1``)',
+                       dest='sample_num_list',
+                       required=True,
+                       )
+argparser.add_argument('-t',
+                       type=str,
+                       help='Target building name: Name of the target building. (e.g., ``-t bml``)',
+                       dest='target_building',
+                       required=True,
+                       )
+argparser.add_argument('-ub',
+                       type='bool',
+                       help='Use Brick when learning',
+                       default=False,
+                       dest='use_brick_flag')
+argparser.add_argument('-ut',
+                       type='bool',
+                       help='Whether to use Brick when learning. (default: ``true``).',
+                       default=False,
+                       dest='use_known_tags')
+argparser.add_argument('-iter',
+                       type=int,
+                       help='Total number of iterations. (default: ``20``)',
+                       dest='iter_num',
+                       default=20)
+argparser.add_argument('-nj',
+                       type=int,
+                       help='Number of processes for multiprocessing',
+                       dest='n_jobs',
+                       default=10)
+argparser.add_argument('-inc',
+                       type=int,
+                       help='Inc num in each strage',
+                       dest='inc_num',
+                       default=10)
+argparser.add_argument('-st',
+                       type=str,
+                       help='Sequential Model type, either crf or lstm',
+                       dest='sequential_type',
+                       default='crf')
+argparser.add_argument('-ct',
+                       type=str,
+                       help='Tagset classifier type. one of RandomForest, \
+                          StructuredCC, MLP.',
+                       dest='tagset_classifier_type',
+                       default='MLP')
+argparser.add_argument('-ts',
+                       type='bool',
+                       help='Flag to use time series features too',
+                       dest='ts_flag',
+                       default=False)
+argparser.add_argument('-neg',
+                       type='bool',
+                       help='Use sample augmentation using negative sample synthesis. (default: ``true``)',
+                       dest='negative_flag',
+                       default=True)
+argparser.add_argument('-post',
+                       type=str,
+                       help='postfix of result filename',
+                       default='0',
+                       dest = 'postfix')
+argparser.add_argument('-crfqs',
+                       type=str,
+                       help='Active learning query strategy for ``char2ir`` (default: ``confidence``).',
+                       default='confidence',
+                       dest = 'crfqs')
+argparser.add_argument('-entqs',
+                       type=str,
+                       help='Active learning query strategy for ``ir2tagsets`` (default: ``phrase_util``).',
+                       default='phrase_util',
+                       dest = 'entqs')
+argparser.add_argument('-g',
+                       type='bool',
+                       help='Graphize the result or not',
+                       dest='graphize',
+                       default=False)
 args =argparser.parse_args()
 
 t0 = arrow.get()
